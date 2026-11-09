@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#c0392b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Caja Fiestas">
+<title>Caja Fiestas</title>
+<!-- Si existe manifest.webmanifest junto al HTML (versión publicada), se usa ese; si no, se genera uno en memoria (ver initPWA). -->
+<style>
+:root{--rojo:#c0392b;--rojo2:#e74c3c;--verde:#1e8449;--gris:#f2f2f2;--txt:#222;--borde:#ddd;--amar:#f9e79f}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--txt);background:#fff;font-size:17px}
+button{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:14px 16px;background:var(--gris);color:var(--txt);touch-action:manipulation}
+button:active{transform:scale(.97)}
+button.pri{background:var(--rojo);color:#fff;font-weight:700}
+button.ok{background:var(--verde);color:#fff;font-weight:700}
+button.sec{background:#fff;border:2px solid var(--borde)}
+button:disabled{opacity:.4}
+input,select{font:inherit;padding:12px;border:2px solid var(--borde);border-radius:10px;width:100%;background:#fff}
+label{display:block;font-weight:600;margin:12px 0 4px}
+h2{margin:6px 0 12px;font-size:1.3rem}
+h3{margin:18px 0 8px;font-size:1.1rem}
+header{position:sticky;top:0;z-index:5;background:var(--rojo);color:#fff;padding:10px 14px;display:flex;align-items:center;gap:10px}
+header .t{flex:1;font-weight:800;font-size:1.05rem;line-height:1.2}
+header .t small{display:block;font-weight:500;opacity:.9;font-size:.82rem}
+header button{background:rgba(255,255,255,.2);color:#fff;padding:8px 12px;font-size:.9rem}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#fff;border-top:1px solid var(--borde);z-index:5;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:none;border-radius:0;padding:10px 2px;font-size:.78rem;display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button span{font-size:1.4rem}
+nav button.act{color:var(--rojo);font-weight:800;border-top:3px solid var(--rojo)}
+main{padding:12px 12px 90px;max-width:900px;margin:0 auto}
+.vista{display:none}.vista.act{display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.prod{min-height:92px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fdf2e9;border:2px solid #f5cba7;font-weight:700;position:relative}
+.prod .e{font-size:1.8rem}.prod .p{font-weight:500;font-size:.95rem;margin-top:2px}
+.prod .n{position:absolute;top:6px;right:6px;background:var(--rojo);color:#fff;border-radius:20px;min-width:26px;padding:2px 6px;font-size:.85rem}
+.aviso{background:var(--amar);border-radius:10px;padding:10px 12px;margin:8px 0;font-size:.92rem}
+.aviso.rojo{background:#fadbd8}.aviso.verde{background:#d5f5e3}
+.carrito{margin-top:14px;border:2px solid var(--borde);border-radius:14px;padding:10px}
+.linea{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px dashed var(--borde)}
+.linea:last-child{border-bottom:0}
+.linea .nm{flex:1}
+.linea button{padding:6px 14px;font-size:1.1rem}
+.total{font-size:2rem;font-weight:900;text-align:right;margin:8px 0}
+.barra{display:flex;gap:8px;flex-wrap:wrap}.barra>*{flex:1}
+.billetes{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.billetes button{padding:14px 2px;font-weight:800;background:#eaf2f8;font-size:1.05rem}
+.billetes button.mon{background:#fdebd0;border-radius:40px}
+.billetes button.bil{background:#d6eaf8}
+.billetes button.acc{background:#eee;font-weight:600;font-size:.92rem}
+.cobroKpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cobroKpis .ck{background:var(--gris);border-radius:12px;padding:8px;text-align:center;font-size:.9rem}
+.cobroKpis .ck b{display:block;font-size:1.9rem;font-weight:900}
+.cambio{font-size:2.4rem;font-weight:900;text-align:center;padding:12px;border-radius:14px;background:#d5f5e3;color:var(--verde);margin:8px 0 4px}
+.cambio.falta{background:#fadbd8;color:var(--rojo)}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+th,td{padding:7px 5px;border-bottom:1px solid var(--borde);text-align:left}
+td.n,th.n{text-align:right;white-space:nowrap}
+tfoot td{font-weight:800}
+#tablaDias,#tablaPersonas,#tablaProductos,#listaTurnos,#listaGastos{overflow-x:auto}
+@media (max-width:420px){table{font-size:.82rem}th,td{padding:6px 3px}}
+.card{border:2px solid var(--borde);border-radius:14px;padding:12px;margin:10px 0}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.kpi{background:var(--gris);border-radius:12px;padding:10px;text-align:center}
+.kpi b{display:block;font-size:1.25rem}
+.chip{display:inline-block;margin:4px;padding:10px 14px;background:#eaf2f8;border-radius:20px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:20;display:none;align-items:flex-end;justify-content:center}
+.modal.act{display:flex}
+.modal .caja{background:#fff;width:100%;max-width:600px;max-height:94vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+#login{position:fixed;inset:0;background:linear-gradient(160deg,#c0392b,#e67e22);z-index:30;display:flex;align-items:center;justify-content:center;padding:16px}
+#login .caja{background:#fff;border-radius:18px;padding:20px;width:100%;max-width:420px}
+.usuarios{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
+.usuarios button{display:flex;flex-direction:column;align-items:center;min-width:96px;padding:10px 12px;background:#eaf2f8}
+.usuarios button small{font-size:.72rem;opacity:.8}
+.usuarios button.sel{background:var(--rojo);color:#fff;font-weight:700}
+.pinIn{font-size:2rem;text-align:center;letter-spacing:.5em}
+.rol{display:inline-block;font-size:.75rem;background:#eee;border-radius:8px;padding:2px 7px;margin-left:4px}
+.error{color:var(--rojo);font-weight:600;min-height:1.2em;margin-top:6px}
+body.sinSesion main,body.sinSesion nav{visibility:hidden}
+#modalPin,#modalNuevoPin{z-index:40}
+.thumb{width:48px;height:48px;object-fit:cover;border-radius:6px;vertical-align:middle}
+.muted{color:#777;font-size:.88rem}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#222;color:#fff;padding:12px 18px;border-radius:12px;z-index:50;display:none;max-width:90%;text-align:center}
+#ticketPrint{display:none}
+@media print{
+  @page{size:58mm auto;margin:0}
+  body *{visibility:hidden}
+  #ticketPrint,#ticketPrint *{visibility:visible}
+  #ticketPrint{display:block;position:absolute;left:0;top:0;width:58mm;padding:2mm;font-family:monospace;font-size:11px;white-space:pre;color:#000}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== ACCESO: elegir usuario + PIN (y asistente del primer superadmin) ===== -->
+<div id="login">
+  <div class="caja">
+    <h2 id="loginFiesta">Caja de las fiestas</h2>
+    <div id="loginEnCaja"></div>
+    <!-- Primer arranque: no hay usuarios todavía -->
+    <div id="loginAsistente" style="display:none">
+      <p><b>Primera vez:</b> crea el usuario <b>superadmin</b> (el responsable de la caja). Después podrá dar de alta al resto de personas en ⚙️ Ajustes.</p>
+      <div id="loginCompat"></div>
+      <label for="waNombre">Nombre del superadmin</label>
+      <input id="waNombre" autocomplete="off" placeholder="Ej.: Álvaro">
+      <label for="waPin">PIN de 4 números</label>
+      <input id="waPin" class="pinIn" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password">
+      <label for="waPin2">Repite el PIN</label>
+      <input id="waPin2" class="pinIn" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password">
+      <button class="pri" style="width:100%;margin-top:12px;font-size:1.15rem" id="btnCrearAdmin">Crear superadmin y entrar</button>
+    </div>
+    <!-- Entrada normal -->
+    <div id="loginEntrar" style="display:none">
+      <label>¿Quién eres?</label>
+      <div class="usuarios" id="loginUsuarios"></div>
+      <div id="loginPinBox" style="display:none">
+        <label for="loginPin" id="loginPinLabel">PIN</label>
+        <input id="loginPin" class="pinIn" type="password" inputmode="numeric" maxlength="4" autocomplete="off">
+        <button class="pri" style="width:100%;margin-top:10px;font-size:1.15rem" id="btnEntrar">Entrar</button>
+      </div>
+      <div class="error" id="loginError"></div>
+      <p class="muted">Cada persona entra con su nombre y su PIN. Si olvidas el PIN, pide al superadmin que te lo cambie.</p>
+    </div>
+  </div>
+</div>
+
+<header>
+  <div class="t"><span id="hdrFiesta">Fiestas</span><small id="hdrUsuario"></small></div>
+  <button id="btnImpresora" title="Ticketera Bluetooth">🖨️ <span id="estadoImp">Sin ticketera</span></button>
+  <button id="btnSalir" title="Cerrar sesión (no cierra el turno)">Salir</button>
+</header>
+
+<main>
+<!-- ===== CAJA ===== -->
+<section class="vista act" id="v-caja">
+  <div id="cajaEstado"></div>
+  <!-- Abrir turno: solo si NO hay ningún turno abierto en este dispositivo -->
+  <div class="card" id="cajaAbrir" style="display:none">
+    <h2>Abrir turno de caja</h2>
+    <p class="muted">Al abrir el turno se apunta tu hora de entrada. Mientras esté abierto, nadie más podrá vender ni abrir otro turno en este móvil.</p>
+    <label for="tFondo">Efectivo inicial en la caja (€)</label>
+    <input id="tFondo" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0,00">
+    <p class="muted">El dinero que hay en la caja al empezar tu turno (cambio).</p>
+    <button class="pri" style="width:100%;margin-top:6px;font-size:1.15rem" id="btnAbrirTurno">Abrir mi turno</button>
+  </div>
+  <div id="cajaVenta">
+  <div id="avisoEjemplo"></div>
+  <div class="grid" id="gridProductos"></div>
+  <div class="carrito">
+    <div id="lineasCarrito"><p class="muted">Toca los productos para añadirlos.</p></div>
+    <div class="total">Total: <span id="totalCarrito">0,00 €</span></div>
+    <div class="barra">
+      <button class="sec" id="btnVaciar">Vaciar</button>
+      <button class="pri" id="btnCobrar" style="flex:2;font-size:1.2rem">Cobrar</button>
+    </div>
+  </div>
+  <div class="barra" style="margin-top:12px">
+    <button class="sec" id="btnReimprimir">Reimprimir último ticket</button>
+    <button class="sec" id="btnAnular">Anular última venta</button>
+  </div>
+  <h3>Últimas ventas de este turno</h3>
+  <div id="ultimasVentas"></div>
+  </div>
+</section>
+
+<!-- ===== GASTOS ===== -->
+<section class="vista" id="v-gastos">
+  <h2>Gastos de la comisión</h2>
+  <div class="card">
+    <label for="gFecha">Fecha</label><input id="gFecha" type="date">
+    <label for="gConcepto">Concepto</label><input id="gConcepto" placeholder="Ej.: Hielo, barriles, vasos…">
+    <label for="gImporte">Importe (€)</label><input id="gImporte" type="number" inputmode="decimal" step="0.01" min="0">
+    <label for="gPagador">Quién lo pagó</label><input id="gPagador" list="listaPersonas">
+    <label style="display:flex;align-items:center;gap:10px;font-weight:500"><input type="checkbox" id="gDeCaja" style="width:auto;transform:scale(1.5)"> Se pagó con dinero de la caja (resta del cierre de este turno)</label>
+    <label for="gFoto">Foto del tique (opcional)</label><input id="gFoto" type="file" accept="image/*" capture="environment">
+    <button class="ok" style="width:100%;margin-top:12px" id="btnGuardarGasto">Guardar gasto</button>
+  </div>
+  <div id="listaGastos"></div>
+  <datalist id="listaPersonas"></datalist>
+</section>
+
+<!-- ===== CIERRE ===== -->
+<section class="vista" id="v-cierre">
+  <h2>Cierre de caja del turno</h2>
+  <div class="card" id="cierreResumen"></div>
+  <div class="card" id="cierreAcciones" style="display:none">
+    <label for="cContado">Efectivo contado en la caja (€)</label>
+    <input id="cContado" type="number" inputmode="decimal" step="0.01" min="0">
+    <div id="cDiferencia" style="margin-top:10px"></div>
+    <button class="pri" style="width:100%;margin-top:12px" id="btnCerrarTurno">Cerrar mi turno (salida)</button>
+    <button class="pri" style="width:100%;margin-top:12px;background:#7b241c" id="btnForzarCierre">⚠️ Forzar cierre de este turno (superadmin)</button>
+    <p class="muted">Se pedirá el PIN para confirmar. La hora de salida y quién cierra quedan registradas.</p>
+  </div>
+  <div class="card">
+    <b>📤 Pasar los datos a Contabilidad</b>
+    <p class="muted">Solo cobra un móvil a la vez (el de quien está en caja). Al terminar tu turno, descarga los datos de este móvil y pásale el archivo a Contabilidad (WhatsApp, correo…). Lo repetido no se duplica.</p>
+    <button class="sec" style="width:100%" id="btnDatosMovil">Descargar datos de este móvil</button>
+  </div>
+  <h3>Turnos cerrados</h3>
+  <div id="listaTurnos"></div>
+</section>
+
+<!-- ===== INFORME ===== -->
+<section class="vista" id="v-informe">
+  <h2>Contabilidad</h2>
+  <div class="kpis" id="kpis"></div>
+  <h3>Por día</h3><div id="tablaDias"></div>
+  <h3>Por persona</h3><div id="tablaPersonas"></div>
+  <h3>Productos vendidos</h3><div id="tablaProductos"></div>
+  <h3>Entradas y salidas de caja</h3><div id="tablaEntradas" style="overflow-x:auto"></div>
+  <h3>Registro de accesos</h3><div id="tablaRegistro" style="overflow-x:auto;max-height:420px;overflow-y:auto"></div>
+  <h3>Exportar</h3>
+  <div class="barra">
+    <button class="ok" id="btnExcel">Excel (todas las hojas)</button>
+  </div>
+  <div class="barra" style="margin-top:8px">
+    <button class="sec" data-csv="resumen">CSV resumen</button>
+    <button class="sec" data-csv="ventas">CSV ventas</button>
+    <button class="sec" data-csv="lineas">CSV líneas</button>
+    <button class="sec" data-csv="gastos">CSV gastos</button>
+    <button class="sec" data-csv="turnos">CSV turnos</button>
+    <button class="sec" data-csv="accesos">CSV accesos</button>
+  </div>
+  <p class="muted">Los CSV usan «;» y coma decimal para que Excel en español los abra bien.</p>
+  <h3>Juntar datos de varios móviles</h3>
+  <p class="muted">Importa los archivos «caja-datos-…json» que te pasen desde cada móvil de caja. Se suman las ventas, turnos, gastos y registros que falten, sin duplicar. (Provisional hasta tener sincronización.)</p>
+  <button class="ok" style="width:100%" id="btnFusionar">📥 Importar copia de otro móvil (fusionar)</button>
+  <input type="file" id="fileFusionar" accept="application/json,.json" multiple style="display:none">
+</section>
+
+<!-- ===== AJUSTES ===== -->
+<section class="vista" id="v-ajustes">
+  <h2>Ajustes</h2>
+  <div class="card">
+    <label for="aFiesta">Nombre de la fiesta (sale en el ticket)</label><input id="aFiesta">
+    <label for="aPie">Texto al pie del ticket</label><input id="aPie">
+    <label style="display:flex;align-items:center;gap:10px;font-weight:500"><input type="checkbox" id="aAuto" style="width:auto;transform:scale(1.5)"> Imprimir ticket automáticamente al cobrar (si hay ticketera conectada)</label>
+    <label style="display:flex;align-items:center;gap:10px;font-weight:500"><input type="checkbox" id="aAcentos" style="width:auto;transform:scale(1.5)"> Quitar acentos y ñ en el ticket Bluetooth (más compatible)</label>
+    <label style="display:flex;align-items:center;gap:10px;font-weight:500"><input type="checkbox" id="aVales" style="width:auto;transform:scale(1.5)"> Un vale por consumición (en vez de un ticket por pedido)</label>
+    <label for="aBloqueo">Bloquear la pantalla tras estos minutos sin usarla</label><input id="aBloqueo" type="number" inputmode="numeric" min="1" max="60" step="1">
+    <button class="ok" style="width:100%;margin-top:12px" id="btnGuardarAjustes">Guardar ajustes</button>
+  </div>
+  <h3>Usuarios y accesos</h3>
+  <div class="card">
+    <div id="listaUsuarios"></div>
+    <h3 style="margin-top:14px">Nuevo usuario</h3>
+    <label for="uNombre">Nombre</label><input id="uNombre" autocomplete="off" placeholder="Ej.: Marta">
+    <label for="uRol">Rol</label>
+    <select id="uRol">
+      <option value="cajero">Cajero/a: solo caja y cerrar su turno</option>
+      <option value="contabilidad">Contabilidad: gastos, cierres, cuentas y exportar (no vende)</option>
+      <option value="superadmin">Superadmin: todo</option>
+    </select>
+    <label for="uPin">PIN (4 números)</label><input id="uPin" class="pinIn" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password">
+    <label for="uPin2">Repite el PIN</label><input id="uPin2" class="pinIn" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password">
+    <button class="ok" style="width:100%;margin-top:12px" id="btnAltaUsuario">Dar de alta</button>
+  </div>
+  <h3>Pasar usuarios y productos a otro móvil</h3>
+  <div class="card">
+    <p class="muted">Cada móvil guarda sus propios usuarios. Exporta aquí y luego importa el archivo en el otro móvil (con un superadmin). El archivo lleva los PIN cifrados, nunca en claro, pero guárdalo con cuidado.</p>
+    <div class="barra"><button class="sec" id="btnExpConfig">Exportar usuarios y productos</button><button class="sec" id="btnImpConfig">Importar usuarios y productos</button></div>
+    <input type="file" id="fileConfig" accept="application/json,.json" style="display:none">
+  </div>
+  <h3>Productos y precios</h3>
+  <div id="avisoEjemplo2"></div>
+  <div id="listaProductosEdit"></div>
+  <button class="sec" style="width:100%;margin-top:8px" id="btnNuevoProducto">+ Añadir producto</button>
+  <button class="sec" style="width:100%;margin-top:8px" id="btnCargarProductos">Cargar productos de las fiestas</button>
+  <h3>Ticketera</h3>
+  <div class="card">
+    <p class="muted">Ticketera térmica Bluetooth de 58 mm (Bluetooth LE). Necesita Chrome en Android y que la app se abra desde una dirección https.</p>
+    <div class="barra"><button class="sec" id="btnConectarImp">Conectar ticketera</button><button class="sec" id="btnPruebaImp">Ticket de prueba</button></div>
+  </div>
+  <h3>Copia de seguridad</h3>
+  <div class="barra">
+    <button class="sec" id="btnBackup">Descargar copia (JSON)</button>
+    <button class="sec" id="btnRestaurar">Restaurar copia</button>
+  </div>
+  <input type="file" id="fileRestaurar" accept="application/json" style="display:none">
+  <button class="sec" style="width:100%;margin-top:8px;color:var(--rojo)" id="btnBorrarTodo">Borrar todos los datos de este dispositivo</button>
+  <p class="muted">Prototipo: los datos se guardan solo en este dispositivo. Varios móviles no comparten ventas todavía, y el candado de «una sola persona en caja» vale solo dentro de este móvil.</p>
+</section>
+</main>
+
+<nav>
+  <button data-v="caja" class="act"><span>🛒</span>Caja</button>
+  <button data-v="gastos"><span>🧾</span>Gastos</button>
+  <button data-v="cierre"><span>🔒</span>Cierre</button>
+  <button data-v="informe"><span>📊</span>Cuentas</button>
+  <button data-v="ajustes"><span>⚙️</span>Ajustes</button>
+</nav>
+
+<!-- ===== MODAL COBRO ===== -->
+<div class="modal" id="modalCobro"><div class="caja">
+  <h2 style="margin-bottom:6px">Cobrar</h2>
+  <div class="cobroKpis">
+    <div class="ck">A cobrar<b id="mTotal"></b></div>
+    <div class="ck">Entregado<b id="mEntregadoVer">0,00 €</b></div>
+  </div>
+  <div class="cambio" id="mCambio">Cambio: 0,00 €</div>
+  <div class="muted" id="mDesglose" style="text-align:center;min-height:1.2em"></div>
+  <p class="muted" style="margin:6px 0 0">Toca las monedas y billetes que te dan: se van sumando.</p>
+  <div class="billetes" id="mBilletes"></div>
+  <label for="mEntregado" style="margin-top:4px">O escribe lo entregado (€)</label>
+  <input id="mEntregado" type="number" inputmode="decimal" step="0.01" min="0" style="font-size:1.4rem;text-align:center">
+  <div class="barra"><button class="sec" id="mCancelar">Cancelar</button><button class="ok" id="mConfirmar" style="flex:2;font-size:1.2rem">Confirmar venta</button></div>
+</div></div>
+
+<!-- ===== MODAL VENTA HECHA ===== -->
+<div class="modal" id="modalHecha"><div class="caja">
+  <h2>✅ Venta registrada</h2>
+  <div class="cambio" id="hCambio"></div>
+  <div class="barra"><button class="sec" id="hBT">🖨️ Ticketera</button><button class="sec" id="hNav">Imprimir (navegador)</button></div>
+  <button class="sec" id="hVales" style="width:100%;margin-top:8px">🎟️ Imprimir vales de este pedido (uno por consumición)</button>
+  <button class="pri" style="width:100%;margin-top:10px;font-size:1.2rem" id="hSeguir">Nueva venta</button>
+</div></div>
+
+<!-- ===== MODAL PIN (confirmar con PIN) ===== -->
+<div class="modal" id="modalPin"><div class="caja">
+  <h2 id="pinTitulo">Confirma con tu PIN</h2>
+  <label for="pinIn" id="pinQuien">PIN</label>
+  <input id="pinIn" class="pinIn" type="password" inputmode="numeric" maxlength="4" autocomplete="off">
+  <div class="error" id="pinError"></div>
+  <div class="barra"><button class="sec" id="pinCancelar">Cancelar</button><button class="ok" id="pinOk" style="flex:2">Confirmar</button></div>
+</div></div>
+
+<!-- ===== MODAL NUEVO PIN ===== -->
+<div class="modal" id="modalNuevoPin"><div class="caja">
+  <h2 id="npTitulo">Nuevo PIN</h2>
+  <label for="npPin">Nuevo PIN (4 números)</label><input id="npPin" class="pinIn" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password">
+  <label for="npPin2">Repite el PIN</label><input id="npPin2" class="pinIn" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password">
+  <div class="error" id="npError"></div>
+  <div class="barra"><button class="sec" id="npCancelar">Cancelar</button><button class="ok" id="npOk" style="flex:2">Guardar PIN</button></div>
+</div></div>
+
+<div id="ticketPrint"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   CAJA FIESTAS · prototipo
+   Datos: localStorage (ventas, gastos, turnos, productos, ajustes,
+          usuarios con PIN cifrado y registro de accesos)
+          IndexedDB (fotos de tiques, para no llenar localStorage)
+   Importes SIEMPRE en céntimos (enteros) para evitar errores de redondeo.
+   ===================================================================== */
+
+const LS_KEY = 'cajaFiestas.v1';
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const eur = c => (c / 100).toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' €';
+const num = c => (c / 100).toFixed(2).replace('.', ',');           // para CSV/Excel en español
+const aCent = v => Math.round(parseFloat(String(v).replace(',', '.')) * 100) || 0;
+const pad = n => String(n).padStart(2, '0');
+const diaKey = ts => { const d = new Date(ts); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+const fechaHora = ts => { const d = new Date(ts); return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+const diaBonito = k => { const [y, m, d] = k.split('-'); return d + '/' + m + '/' + y; };
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+
+/* ---------- Productos y precios de las fiestas (precios en céntimos) ---------- */
+const PRODUCTOS_FIESTAS = [
+  {nombre: 'Botellín Mahou', precio: 140, emoji: '🍺'},
+  {nombre: 'Cubo 5 botellines', precio: 650, emoji: '🪣'},
+  {nombre: 'Agua', precio: 100, emoji: '💧'},
+  {nombre: 'Refrescos', precio: 200, emoji: '🥤'},
+  {nombre: 'Copas', precio: 500, emoji: '🍸'},
+  {nombre: 'Tinto de verano', precio: 200, emoji: '🍷'},
+  {nombre: 'Mojito', precio: 500, emoji: '🍹'},
+  {nombre: 'Perritos', precio: 200, emoji: '🌭'},
+];
+const productosFiestas = () => PRODUCTOS_FIESTAS.map(p => ({...p, id: uid(), activo: true}));
+
+function estadoInicial() {
+  return {
+    ajustes: {fiesta: 'Fiestas Robledillo 2027', pie: '¡Gracias y felices fiestas!', autoImprimir: true, quitarAcentos: true, bloqueoMin: 3, valePorConsumicion: false},
+    productos: productosFiestas(),
+    productosSonEjemplo: false,  // true solo en datos antiguos que aún tienen los productos de ejemplo del prototipo
+    ventas: [],   // {id, ts, persona, turnoId, lineas:[{nombre,precio,cant}], total, entregado, cambio, anulada}
+    gastos: [],   // {id, ts, fecha, concepto, importe, pagadoPor, deCaja, turnoId, tieneFoto}
+    turnos: [],   // {id, persona, usuarioId, inicio, fondo, fin, ventas, gastosCaja, esperado, contado, diferencia, cerradoPor, cerradoPorId, forzado, motivo}
+    turnoActual: null,   // turno abierto en ESTE dispositivo (candado "una sola persona en caja")
+    personas: [],        // nombres antiguos (antes de los usuarios con PIN); se conservan para el histórico
+    usuarios: [],        // {id, nombre, rol: superadmin|contabilidad|cajero, sal, hash (SHA-256 de sal+PIN), activo, creado}
+    registro: [],        // registro de accesos: {id, ts, tipo, usuarioId, nombre, rol, turnoId, detalle}
+  };
+}
+
+let DB = cargar();
+let carrito = [];        // [{id, nombre, precio, cant}]
+let ultimaVenta = null;
+
+function cargar() {
+  try {
+    const s = JSON.parse(localStorage.getItem(LS_KEY));
+    if (s && s.ventas) {
+      const d = Object.assign(estadoInicial(), s);
+      // Migración: si el móvil aún tiene los productos de EJEMPLO y no hay ninguna venta, se cambian por los de las fiestas.
+      // Si ya hay ventas no se toca nada: en Ajustes está el botón «Cargar productos de las fiestas».
+      let cambiado = false;
+      if (d.productosSonEjemplo && !d.ventas.length) { d.productos = productosFiestas(); d.productosSonEjemplo = false; cambiado = true; }
+      // Cabecera antigua por defecto -> la de este año
+      if (d.ajustes.fiesta === 'Fiestas del pueblo 2026') { d.ajustes.fiesta = 'Fiestas Robledillo 2027'; cambiado = true; }
+      if (cambiado) localStorage.setItem(LS_KEY, JSON.stringify(d));
+      return d;
+    }
+  } catch (e) {}
+  return estadoInicial();
+}
+function guardar(cambio) {
+  localStorage.setItem(LS_KEY, JSON.stringify(DB));
+  Sync.encolar(cambio);
+}
+
+/* =====================================================================
+   SINCRONIZACIÓN ENTRE DISPOSITIVOS — NO IMPLEMENTADA EN EL PROTOTIPO
+   ---------------------------------------------------------------------
+   Aquí iría el envío de cada cambio a un almacén común para que varios
+   móviles compartan ventas y gastos. Opción recomendada y gratuita:
+     1. Crear una hoja de Google con pestañas Ventas, Lineas, Gastos, Turnos.
+     2. En Extensiones > Apps Script, publicar una "aplicación web" con
+        doPost(e) que haga appendRow() en la pestaña que toque y
+        doGet() que devuelva los datos en JSON.
+     3. Aquí: guardar la URL de esa aplicación web en DB.ajustes.syncUrl y,
+        en Sync.enviar(), hacer fetch(syncUrl, {method:'POST', body: JSON
+        .stringify(cola)}) con reintentos cuando vuelva la conexión
+        (evento 'online').
+   Cada registro ya lleva un id único (uid) y el nombre del dispositivo/
+   persona, así que se pueden fusionar sin duplicados.
+   Las fotos de tiques podrían subirse a Google Drive desde el mismo script.
+   ===================================================================== */
+const Sync = {
+  cola: [],
+  encolar(cambio) { if (cambio) this.cola.push({ts: Date.now(), ...cambio}); /* this.enviar(); */ },
+  async enviar() { /* PENDIENTE: fetch(DB.ajustes.syncUrl, ...) */ },
+};
+
+/* ---------- IndexedDB para fotos ---------- */
+const FotoDB = {
+  db: null,
+  abrir() {
+    if (this.db) return Promise.resolve(this.db);
+    return new Promise((ok, ko) => {
+      const r = indexedDB.open('cajaFiestasFotos', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('fotos');
+      r.onsuccess = () => ok(this.db = r.result);
+      r.onerror = () => ko(r.error);
+    });
+  },
+  async poner(id, dataUrl) { const db = await this.abrir(); return new Promise((ok, ko) => { const t = db.transaction('fotos', 'readwrite'); t.objectStore('fotos').put(dataUrl, id); t.oncomplete = ok; t.onerror = () => ko(t.error); }); },
+  async coger(id) { const db = await this.abrir(); return new Promise(ok => { const r = db.transaction('fotos').objectStore('fotos').get(id); r.onsuccess = () => ok(r.result); r.onerror = () => ok(null); }); },
+  async borrar(id) { const db = await this.abrir(); return new Promise(ok => { const t = db.transaction('fotos', 'readwrite'); t.objectStore('fotos').delete(id); t.oncomplete = ok; }); },
+  async vaciar() { const db = await this.abrir(); return new Promise(ok => { const t = db.transaction('fotos', 'readwrite'); t.objectStore('fotos').clear(); t.oncomplete = ok; }); },
+};
+function comprimirFoto(file, max = 1200) {
+  return new Promise((ok, ko) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const k = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas'); c.width = img.width * k; c.height = img.height * k;
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+      ok(c.toDataURL('image/jpeg', 0.7));
+    };
+    img.onerror = ko; img.src = url;
+  });
+}
+
+function toast(msg, ms = 2200) { const t = $('#toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(t._h); t._h = setTimeout(() => t.style.display = 'none', ms); }
+
+/* =====================================================================
+   USUARIOS, PIN Y SESIÓN
+   - Cada usuario tiene nombre, rol y PIN de 4 cifras. El PIN NUNCA se guarda:
+     se guarda una sal aleatoria y SHA-256(sal + ':' + PIN) en hexadecimal.
+   - La sesión (quién está usando el móvil) vive solo en memoria: al recargar
+     la página hay que volver a poner el PIN. El TURNO, en cambio, se guarda en
+     localStorage y sobrevive a recargas.
+   ===================================================================== */
+const ROLES = {superadmin: 'Superadmin', contabilidad: 'Contabilidad', cajero: 'Cajero/a'};
+const PERMISOS = {                       // pestañas que ve cada rol
+  superadmin: ['caja', 'gastos', 'cierre', 'informe', 'ajustes'],
+  contabilidad: ['gastos', 'cierre', 'informe'],
+  cajero: ['caja', 'cierre'],
+};
+const puedeVenderRol = r => r === 'cajero' || r === 'superadmin';
+let sesion = null;          // usuario con la sesión abierta (objeto de DB.usuarios)
+let usuarioElegido = null;  // usuario marcado en la pantalla de entrada
+let fallosPin = 0, esperaPinHasta = 0;
+let carritoDe = null;       // de quién es el carrito en memoria (se vacía si entra otra persona)
+let vistaActual = 'caja';
+let ultimaSesionId = null;  // última persona que tuvo la sesión en este móvil
+
+const hex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+const nuevaSal = () => hex(crypto.getRandomValues(new Uint8Array(16)));
+async function hashPin(pin, sal) {
+  if (!(window.crypto && crypto.subtle)) throw new Error('Este navegador no permite proteger el PIN aquí. Abre la app desde su dirección https.');
+  return hex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(sal + ':' + pin)));
+}
+const pinValido = p => /^\d{4}$/.test(p);
+async function comprobarPin(u, pin) { return !!u && pinValido(pin) && (await hashPin(pin, u.sal)) === u.hash; }
+const usuariosActivos = () => DB.usuarios.filter(u => u.activo);
+const usuarioPorId = id => DB.usuarios.find(u => u.id === id);
+const nombreLibre = (n, salvo) => !DB.usuarios.some(u => u.activo && u.id !== salvo && u.nombre.toLowerCase() === n.toLowerCase());
+async function crearUsuario(nombre, rol, pin) {
+  const sal = nuevaSal();
+  const u = {id: uid(), nombre, rol, sal, hash: await hashPin(pin, sal), activo: true, creado: Date.now()};
+  DB.usuarios.push(u); return u;
+}
+const persona = () => sesion ? sesion.nombre : '';
+const hora = ts => fechaHora(ts).slice(11);
+const enCajaTexto = () => { const t = DB.turnoActual; return t ? `${t.persona} desde las ${hora(t.inicio)} del ${fechaHora(t.inicio).slice(0, 10)}` : ''; };
+
+/* ---- Registro de accesos (entradas/salidas de caja, sesiones, PIN fallidos, usuarios) ---- */
+const TIPOS = {entrada: '🟢 Entrada en caja (abre turno)', salida: '🔴 Salida de caja (cierra turno)', cierreForzado: '⚠️ Cierre forzado de turno',
+  sesion: 'Inicio de sesión', finSesion: 'Fin de sesión', bloqueo: '🔒 Bloqueo por inactividad', pinFallido: '❌ PIN incorrecto',
+  intentoBloqueado: '⛔ Intento bloqueado (caja ocupada)', usuario: '👥 Gestión de usuarios', datos: '🗂️ Datos'};
+function registrar(tipo, detalle = '', {quien = sesion, turnoId} = {}) {
+  const e = {id: uid(), ts: Date.now(), tipo, usuarioId: quien ? quien.id : null, nombre: quien ? quien.nombre : '', rol: quien ? quien.rol : '',
+    turnoId: turnoId !== undefined ? turnoId : (DB.turnoActual ? DB.turnoActual.id : null), detalle};
+  DB.registro.push(e); return e;
+}
+function recargarSesion(quien) { sesion = quien ? (usuarioPorId(quien.id) || null) : null; if (sesion && !sesion.activo) sesion = null; }
+// Vuelve a leer localStorage (por si otra pestaña de este navegador cambió algo) manteniendo la sesión.
+function recargarDB() { const q = sesion; DB = cargar(); recargarSesion(q); }
+window.addEventListener('storage', e => { if (e.key === LS_KEY) { recargarDB(); pintarTodo(); } });
+
+/* ---- Pantalla de entrada ---- */
+function pintarLogin() {
+  $('#loginFiesta').textContent = DB.ajustes.fiesta;
+  document.body.classList.toggle('sinSesion', !sesion);
+  $('#login').style.display = sesion ? 'none' : 'flex';
+  $('#btnSalir').style.display = sesion ? '' : 'none';
+  if (sesion) return;
+  const t = DB.turnoActual, hayUsuarios = DB.usuarios.length > 0;
+  $('#loginEnCaja').innerHTML = t ? `<div class="aviso">🔒 <b>En caja: ${esc(enCajaTexto())}.</b><br>${t.usuarioId ? esc(t.persona) + ', pon tu PIN para seguir. Nadie más puede abrir turno ni vender hasta que se cierre.' : 'Es un turno antiguo (de antes de los usuarios con PIN): un superadmin debe cerrarlo en 🔒 Cierre.'}</div>` : '';
+  $('#loginAsistente').style.display = hayUsuarios ? 'none' : 'block';
+  $('#loginEntrar').style.display = hayUsuarios ? 'block' : 'none';
+  if (!hayUsuarios) {
+    const n = DB.ventas.length + DB.turnos.length + DB.gastos.length;
+    $('#loginCompat').innerHTML = n ? `<div class="aviso verde">Se conservan los datos que ya hay en este móvil: ${DB.ventas.length} ventas, ${DB.turnos.length} turnos y ${DB.gastos.length} gastos.</div>` : '';
+    return;
+  }
+  const elegido = usuarioPorId(usuarioElegido);
+  if (!elegido || !elegido.activo) {
+    const due = t && usuarioPorId(t.usuarioId);
+    usuarioElegido = due && due.activo ? due.id : (usuariosActivos().length === 1 ? usuariosActivos()[0].id : null);
+  }
+  $('#loginUsuarios').innerHTML = usuariosActivos().map(u => `<button class="${u.id === usuarioElegido ? 'sel' : ''}" data-u="${u.id}">${esc(u.nombre)}<small>${ROLES[u.rol]}${t && t.usuarioId === u.id ? ' · en caja' : ''}</small></button>`).join('');
+  $$('#loginUsuarios button').forEach(b => b.onclick = () => { usuarioElegido = b.dataset.u; $('#loginPin').value = ''; $('#loginError').textContent = ''; pintarLogin(); $('#loginPin').focus(); });
+  $('#loginPinBox').style.display = usuarioElegido ? 'block' : 'none';
+  $('#loginPinLabel').textContent = usuarioElegido ? 'PIN de ' + usuarioPorId(usuarioElegido).nombre : 'PIN';
+}
+async function entrar() {
+  const u = usuarioPorId(usuarioElegido); if (!u || !u.activo) return toast('Elige tu nombre');
+  if (Date.now() < esperaPinHasta) { $('#loginError').textContent = `Demasiados intentos. Espera ${Math.ceil((esperaPinHasta - Date.now()) / 1000)} s.`; return; }
+  const pin = $('#loginPin').value.trim(); $('#loginPin').value = '';
+  let ok = false; try { ok = await comprobarPin(u, pin); } catch (e) { alert(e.message); return; }
+  if (!ok) {
+    fallosPin++; registrar('pinFallido', 'Al entrar', {quien: u}); guardar({tipo: 'acceso'});
+    if (fallosPin >= 5) { fallosPin = 0; esperaPinHasta = Date.now() + 30000; }
+    $('#loginError').textContent = 'PIN incorrecto'; return;
+  }
+  fallosPin = 0; iniciarSesion(u);
+}
+function iniciarSesion(u) {
+  sesion = u; $('#loginError').textContent = '';
+  if (carritoDe !== u.id) { carrito = []; carritoDe = u.id; }
+  const t = DB.turnoActual;
+  registrar('sesion', t && t.usuarioId === u.id ? 'Vuelve a su turno abierto' : '');
+  guardar({tipo: 'acceso'});
+  ultimaActividad = Date.now();
+  // Otra persona empieza en su pestaña principal; quien desbloquea su propia pantalla sigue donde estaba.
+  if (ultimaSesionId !== u.id || !PERMISOS[u.rol].includes(vistaActual)) vistaActual = PERMISOS[u.rol][0];
+  ultimaSesionId = u.id;
+  irA(vistaActual); toast('Hola, ' + u.nombre);
+}
+function cerrarSesion(motivo) {
+  if (!sesion) return;
+  if ($('#modalPin').classList.contains('act')) $('#pinCancelar').click();
+  if ($('#modalNuevoPin').classList.contains('act')) $('#npCancelar').click();
+  $$('.modal').forEach(m => m.classList.remove('act'));
+  registrar(motivo === 'bloqueo' ? 'bloqueo' : 'finSesion', DB.turnoActual && DB.turnoActual.usuarioId === sesion.id ? 'Su turno sigue abierto' : '');
+  usuarioElegido = motivo === 'bloqueo' ? sesion.id : null;
+  sesion = null; guardar({tipo: 'acceso'}); pintarTodo();
+}
+$('#btnEntrar').onclick = entrar;
+$('#loginPin').oninput = () => { if ($('#loginPin').value.length === 4) entrar(); };
+$('#loginPin').onkeydown = e => { if (e.key === 'Enter') entrar(); };
+$('#btnSalir').onclick = () => {
+  const t = DB.turnoActual;
+  if (t && sesion && t.usuarioId === sesion.id && !confirm('Tu turno sigue ABIERTO: nadie más podrá vender hasta que vuelvas a entrar o lo cierres en 🔒 Cierre.\n¿Salir igualmente?')) return;
+  cerrarSesion('salir');
+};
+$('#btnCrearAdmin').onclick = async () => {
+  const nombre = $('#waNombre').value.trim(), p1 = $('#waPin').value.trim(), p2 = $('#waPin2').value.trim();
+  if (!nombre) return toast('Escribe el nombre');
+  if (!pinValido(p1)) return toast('El PIN tiene que ser de 4 números');
+  if (p1 !== p2) return toast('Los dos PIN no coinciden');
+  recargarDB(); if (DB.usuarios.length) return pintarTodo();   // ya se creó (p. ej. en otra pestaña)
+  try {
+    const u = await crearUsuario(nombre, 'superadmin', p1);
+    registrar('usuario', 'Alta del primer superadmin: ' + nombre, {quien: u});
+    ['#waNombre', '#waPin', '#waPin2'].forEach(x => $(x).value = '');
+    iniciarSesion(u);
+  } catch (e) { alert(e.message); }
+};
+
+/* ---- Pedir el PIN otra vez para confirmar algo (cerrar turno, forzar cierre) ---- */
+function pedirPin(u, titulo) {
+  return new Promise(res => {
+    $('#pinTitulo').textContent = titulo; $('#pinQuien').textContent = 'PIN de ' + u.nombre;
+    $('#pinIn').value = ''; $('#pinError').textContent = '';
+    $('#modalPin').classList.add('act'); setTimeout(() => $('#pinIn').focus(), 50);
+    const fin = v => { $('#modalPin').classList.remove('act'); $('#pinOk').onclick = $('#pinCancelar').onclick = $('#pinIn').oninput = null; res(v); };
+    $('#pinCancelar').onclick = () => fin(false);
+    $('#pinOk').onclick = async () => {
+      if (await comprobarPin(u, $('#pinIn').value.trim()).catch(() => false)) return fin(true);
+      $('#pinIn').value = ''; $('#pinError').textContent = 'PIN incorrecto';
+      registrar('pinFallido', titulo, {quien: u}); guardar({tipo: 'acceso'});
+    };
+    $('#pinIn').oninput = () => { if ($('#pinIn').value.length === 4) $('#pinOk').click(); };
+  });
+}
+function pedirNuevoPin(nombre) {
+  return new Promise(res => {
+    $('#npTitulo').textContent = 'Nuevo PIN para ' + nombre; $('#npPin').value = $('#npPin2').value = ''; $('#npError').textContent = '';
+    $('#modalNuevoPin').classList.add('act'); setTimeout(() => $('#npPin').focus(), 50);
+    const fin = v => { $('#modalNuevoPin').classList.remove('act'); $('#npOk').onclick = $('#npCancelar').onclick = null; res(v); };
+    $('#npCancelar').onclick = () => fin(null);
+    $('#npOk').onclick = () => {
+      const a = $('#npPin').value.trim(), b = $('#npPin2').value.trim();
+      if (!pinValido(a)) return $('#npError').textContent = 'Tiene que ser de 4 números';
+      if (a !== b) return $('#npError').textContent = 'Los dos PIN no coinciden';
+      fin(a);
+    };
+  });
+}
+
+/* ---- Bloqueo automático por inactividad: cierra la SESIÓN, no el turno ---- */
+let ultimaActividad = Date.now();
+['pointerdown', 'keydown', 'touchstart', 'wheel'].forEach(ev => document.addEventListener(ev, () => { ultimaActividad = Date.now(); }, {passive: true, capture: true}));
+setInterval(() => {
+  const min = Math.max(0.05, Number(DB.ajustes.bloqueoMin) || 3);
+  if (sesion && Date.now() - ultimaActividad > min * 60000) { cerrarSesion('bloqueo'); toast('Pantalla bloqueada. Pon tu PIN para seguir.'); }
+}, 5000);
+
+/* =====================================================================
+   TURNO DE CAJA: una sola persona en caja
+   =====================================================================
+   BLOQUEO ENTRE VARIOS MÓVILES — PENDIENTE (llega con la sincronización)
+   ---------------------------------------------------------------------
+   Hoy el candado vale DENTRO de este dispositivo: DB.turnoActual guarda el
+   turno abierto en localStorage (sobrevive a recargas) y el evento
+   'storage' + recargarDB() evita abrir dos turnos en dos pestañas del mismo
+   navegador. Dos móviles distintos NO se ven entre sí todavía.
+   Para que "solo una persona en caja" valga entre varios móviles:
+     1. pedirCandadoCaja(): antes de abrir el turno, POST al servidor común
+        (p. ej. la aplicación web de Apps Script de Sync) con
+        {accion:'abrirTurno', cajaId, turno}. El servidor, dentro de
+        LockService.getScriptLock(), mira si ya hay un turno abierto para
+        esa caja; si lo hay devuelve {ok:false, turno:<el abierto>} y aquí
+        se muestra "En caja está X desde HH:MM"; si no, lo apunta y {ok:true}.
+     2. Sin conexión no se debería abrir turno (o abrirlo "provisional" y
+        avisar), porque no se puede garantizar el candado.
+     3. soltarCandadoCaja(): al cerrar (o forzar el cierre) se avisa al
+        servidor para liberar la caja. El cierre forzado por un superadmin
+        desde OTRO móvil también liberaría el candado del servidor.
+     4. Si hay varias barras/cajas físicas, cada una tendría su cajaId
+        (p. ej. DB.ajustes.cajaId) y el candado sería por caja.
+     5. Los usuarios (con su hash de PIN) también tendrían que sincronizarse
+        para poder entrar con el mismo PIN en cualquier móvil.
+   ===================================================================== */
+async function pedirCandadoCaja(turno) { /* FUTURO: return await Sync.pedirCandado(turno); */ return {ok: true}; }
+async function soltarCandadoCaja(turno) { /* FUTURO: await Sync.soltarCandado(turno); */ }
+
+$('#btnAbrirTurno').onclick = async () => {
+  if (!sesion || !puedeVenderRol(sesion.rol)) return toast('Tu usuario no puede abrir turno de caja');
+  recargarDB();   // por si se abrió un turno en otra pestaña
+  if (!sesion) return pintarTodo();
+  const ocupado = DB.turnoActual;
+  if (ocupado) {
+    registrar('intentoBloqueado', `Intento de abrir turno con la caja ocupada por ${ocupado.persona}${ocupado.usuarioId === sesion.id ? ' (la misma persona)' : ''}`);
+    guardar({tipo: 'acceso'}); pintarTodo();
+    return alert(ocupado.usuarioId === sesion.id ? 'Ya tienes un turno abierto. No se puede abrir otro a la vez.' : `No se puede abrir otro turno: en caja está ${enCajaTexto()}.`);
+  }
+  const fondo = aCent($('#tFondo').value || 0);
+  const t = {id: uid(), persona: sesion.nombre, usuarioId: sesion.id, rol: sesion.rol, inicio: Date.now(), fondo};
+  const c = await pedirCandadoCaja(t);
+  if (!c.ok) return alert('Otro móvil tiene la caja abierta. No se puede abrir turno.');
+  DB.turnoActual = t;
+  registrar('entrada', 'Efectivo inicial ' + eur(fondo));
+  guardar({tipo: 'abrirTurno', datos: t});
+  $('#tFondo').value = ''; carrito = []; carritoDe = sesion.id; pintarTodo(); toast('Turno abierto: ' + sesion.nombre);
+};
+const puedeVender = () => !!(sesion && DB.turnoActual && DB.turnoActual.usuarioId === sesion.id && puedeVenderRol(sesion.rol));
+function pintarCajaEstado() {
+  const t = DB.turnoActual, puede = puedeVender();
+  $('#cajaVenta').style.display = puede ? '' : 'none';
+  $('#cajaAbrir').style.display = !t && sesion && puedeVenderRol(sesion.rol) ? '' : 'none';
+  $('#cajaEstado').innerHTML = !t ? '' : puede
+    ? `<div class="aviso verde">🟢 Estás en caja desde las <b>${hora(t.inicio)}</b>. Al terminar, cierra tu turno en 🔒 Cierre.</div>`
+    : `<div class="aviso rojo">🔒 <b>Caja ocupada.</b> En caja está <b>${esc(enCajaTexto())}</b>.<br>Nadie más puede abrir turno ni vender hasta que cierre su turno${sesion && sesion.rol === 'superadmin' ? ' (como superadmin puedes forzar el cierre en 🔒 Cierre)' : ''}.</div>`;
+}
+
+/* =====================================================================
+   CAJA
+   ===================================================================== */
+function pintarProductos() {
+  // (El aviso de «precios de EJEMPLO» se quitó: ya se usan los productos reales de las fiestas.)
+  $('#gridProductos').innerHTML = DB.productos.filter(p => p.activo).map(p => {
+    const n = (carrito.find(l => l.id === p.id) || {}).cant;
+    return `<button class="prod" data-id="${p.id}"><span class="e">${esc(p.emoji || '🎉')}</span>${esc(p.nombre)}<span class="p">${eur(p.precio)}</span>${n ? `<span class="n">${n}</span>` : ''}</button>`;
+  }).join('') || '<p class="muted">No hay productos. Añádelos en Ajustes.</p>';
+  $$('#gridProductos .prod').forEach(b => b.onclick = () => añadir(b.dataset.id));
+}
+function añadir(id, d = 1) {
+  const p = DB.productos.find(x => x.id === id);
+  let l = carrito.find(x => x.id === id);
+  if (!l && d > 0) carrito.push(l = {id, nombre: p.nombre, precio: p.precio, cant: 0});
+  if (!l) return;
+  l.cant += d; if (l.cant <= 0) carrito = carrito.filter(x => x !== l);
+  pintarCarrito(); pintarProductos();
+}
+const totalCarrito = () => carrito.reduce((s, l) => s + l.precio * l.cant, 0);
+function pintarCarrito() {
+  $('#lineasCarrito').innerHTML = carrito.length ? carrito.map(l => `<div class="linea"><span class="nm"><b>${l.cant} × ${esc(l.nombre)}</b><br><span class="muted">${eur(l.precio)} c/u · ${eur(l.precio * l.cant)}</span></span><button data-m="${l.id}">−</button><button data-p="${l.id}">+</button></div>`).join('') : '<p class="muted">Toca los productos para añadirlos.</p>';
+  $$('#lineasCarrito [data-m]').forEach(b => b.onclick = () => añadir(b.dataset.m, -1));
+  $$('#lineasCarrito [data-p]').forEach(b => b.onclick = () => añadir(b.dataset.p, 1));
+  $('#totalCarrito').textContent = eur(totalCarrito());
+  $('#btnCobrar').disabled = !carrito.length;
+}
+$('#btnVaciar').onclick = () => { carrito = []; pintarCarrito(); pintarProductos(); };
+
+$('#btnCobrar').onclick = () => {
+  if (!puedeVender()) return toast('No tienes el turno de caja abierto');
+  if (!carrito.length) return;
+  $('#mTotal').textContent = eur(totalCarrito());
+  $('#mEntregado').value = ''; historialCobro = [];
+  calcCambio();
+  $('#modalCobro').classList.add('act');
+};
+/* ---- Cobro por toques: cada moneda/billete SUMA a lo entregado ---- */
+const MONEDAS = [10, 20, 50, 100, 200], BILLETES = [500, 1000, 2000, 5000];   // céntimos
+let historialCobro = [];   // valores anteriores del campo «entregado», para deshacer
+const fmtDen = c => c < 100 ? '0,' + pad(c) : String(c / 100);
+$('#mBilletes').innerHTML = [...MONEDAS, ...BILLETES].map(c => `<button class="${c < 500 ? 'mon' : 'bil'}" data-suma="${c}">${fmtDen(c)} €</button>`).join('') +
+  '<button class="acc" data-acc="exacto">Exacto</button><button class="acc" data-acc="deshacer">↶ Deshacer</button><button class="acc" data-acc="borrar">Borrar</button>';
+function ponerEntregado(c) {
+  historialCobro.push($('#mEntregado').value);
+  $('#mEntregado').value = c > 0 ? (c / 100).toFixed(2) : '';
+  calcCambio();
+}
+$$('#mBilletes [data-suma]').forEach(b => b.onclick = () => ponerEntregado(aCent($('#mEntregado').value || 0) + Number(b.dataset.suma)));
+$('#mBilletes [data-acc="exacto"]').onclick = () => ponerEntregado(totalCarrito());
+$('#mBilletes [data-acc="borrar"]').onclick = () => ponerEntregado(0);
+$('#mBilletes [data-acc="deshacer"]').onclick = () => { if (!historialCobro.length) return; $('#mEntregado').value = historialCobro.pop(); calcCambio(); };
+// Cómo dar el cambio con el menor número de monedas/billetes (céntimos).
+function desgloseCambio(c) {
+  const out = [];
+  for (const d of [5000, 2000, 1000, 500, 200, 100, 50, 20, 10, 5, 2, 1]) { const n = Math.floor(c / d); if (n) { out.push(n + ' × ' + eur(d).replace(',00 €', ' €')); c -= n * d; } }
+  return out.join(' + ');
+}
+function calcCambio() {
+  const t = totalCarrito(), e = aCent($('#mEntregado').value), c = e - t, el = $('#mCambio');
+  $('#mEntregadoVer').textContent = eur($('#mEntregado').value ? e : 0);
+  $('#mDesglose').textContent = '';
+  if (!$('#mEntregado').value) { el.className = 'cambio falta'; el.textContent = 'Faltan ' + eur(t); $('#mConfirmar').disabled = true; return; }
+  if (c < 0) { el.className = 'cambio falta'; el.textContent = 'Faltan ' + eur(-c); $('#mConfirmar').disabled = true; }
+  else { el.className = 'cambio'; el.textContent = 'Cambio: ' + eur(c); $('#mConfirmar').disabled = false; if (c > 0) $('#mDesglose').textContent = 'Da: ' + desgloseCambio(c); }
+}
+$('#mEntregado').oninput = () => { historialCobro.push($('#mEntregado').dataset.prev || ''); $('#mEntregado').dataset.prev = $('#mEntregado').value; calcCambio(); };
+$('#mCancelar').onclick = () => $('#modalCobro').classList.remove('act');
+$('#mConfirmar').onclick = async () => {
+  const total = totalCarrito(), entregado = aCent($('#mEntregado').value);
+  if (entregado < total) return;
+  if (!puedeVender()) { $('#modalCobro').classList.remove('act'); return toast('No tienes el turno de caja abierto'); }
+  const v = {id: uid(), ts: Date.now(), persona: persona(), usuarioId: sesion.id, turnoId: DB.turnoActual.id,
+    lineas: carrito.map(l => ({nombre: l.nombre, precio: l.precio, cant: l.cant})), total, entregado, cambio: entregado - total};
+  DB.ventas.push(v); guardar({tipo: 'venta', datos: v}); ultimaVenta = v;
+  carrito = []; $('#modalCobro').classList.remove('act');
+  $('#hCambio').textContent = 'Cambio: ' + eur(v.cambio);
+  $('#modalHecha').classList.add('act');
+  pintarTodo();
+  if (DB.ajustes.autoImprimir && Impresora.conectada()) imprimirPedidoBT(v);
+};
+$('#hBT').onclick = () => ultimaVenta && imprimirPedidoBT(ultimaVenta);
+$('#hNav').onclick = () => ultimaVenta && (DB.ajustes.valePorConsumicion ? imprimirValesNavegador(ultimaVenta) : imprimirNavegador(ultimaVenta));
+$('#hVales').onclick = () => ultimaVenta && imprimirVales(ultimaVenta);
+$('#hSeguir').onclick = () => $('#modalHecha').classList.remove('act');
+
+const ventasValidas = () => DB.ventas.filter(v => !v.anulada);
+$('#btnReimprimir').onclick = () => {
+  const v = ventasValidas().filter(v => DB.turnoActual && v.turnoId === DB.turnoActual.id).pop() || ventasValidas().pop();
+  if (!v) return toast('No hay ventas');
+  ultimaVenta = v; $('#hCambio').textContent = 'Cambio: ' + eur(v.cambio); $('#modalHecha').classList.add('act');
+};
+$('#btnAnular').onclick = () => {
+  if (!puedeVender()) return toast('No tienes el turno de caja abierto');
+  const v = ventasValidas().filter(v => DB.turnoActual && v.turnoId === DB.turnoActual.id).pop();
+  if (!v) return toast('No hay ventas en este turno');
+  if (!confirm(`¿Anular la venta de ${eur(v.total)} de las ${fechaHora(v.ts).slice(11)}?`)) return;
+  v.anulada = true; v.anuladaPor = persona(); guardar({tipo: 'anular', id: v.id}); pintarTodo(); toast('Venta anulada');
+};
+function pintarUltimas() {
+  const vs = DB.turnoActual ? DB.ventas.filter(v => v.turnoId === DB.turnoActual.id).slice(-10).reverse() : [];
+  $('#ultimasVentas').innerHTML = vs.length ? '<table>' + vs.map(v => `<tr style="${v.anulada ? 'text-decoration:line-through;color:#999' : ''}"><td>${fechaHora(v.ts).slice(11)}</td><td>${esc(v.lineas.map(l => l.cant + '× ' + l.nombre).join(', '))}</td><td class="n">${eur(v.total)}</td></tr>`).join('') + '</table>' : '<p class="muted">Aún no hay ventas en este turno.</p>';
+}
+
+/* =====================================================================
+   TICKET: texto común, impresión Bluetooth (ESC/POS) y navegador
+   ===================================================================== */
+const ANCHO = 32; // caracteres por línea en 58 mm (fuente A)
+function textoTicket(v) {
+  const L = [], linea = '-'.repeat(ANCHO);
+  const dosCol = (a, b) => { a = String(a); b = String(b); const sp = ANCHO - b.length; if (a.length > sp - 1) a = a.slice(0, sp - 1); return a + ' '.repeat(sp - a.length) + b; };
+  const m = c => (c / 100).toFixed(2).replace('.', ',');
+  L.push(linea);
+  v.lineas.forEach(l => {
+    const imp = m(l.precio * l.cant), izq = `${l.cant} x ${l.nombre}`, hueco = ANCHO - imp.length - 1;
+    if (izq.length <= hueco) L.push(dosCol(izq, imp));
+    else { // nombre muy largo: se parte en varias líneas y el importe va en la última
+      const trozos = partir(izq, ANCHO); const ult = trozos.pop();
+      trozos.forEach(x => L.push(x)); L.push(ult.length <= hueco ? dosCol(ult, imp) : ult); if (ult.length > hueco) L.push(dosCol('', imp));
+    }
+    if (l.cant > 1) L.push('   (' + m(l.precio) + ' c/u)');
+  });
+  const nArt = v.lineas.reduce((s, l) => s + l.cant, 0);
+  L.push(dosCol('Articulos', String(nArt)));
+  L.push(linea);
+  return {
+    cabecera: DB.ajustes.fiesta,
+    fecha: fechaHora(v.ts),
+    cuerpo: L,
+    total: dosCol('TOTAL EUR', m(v.total)),
+    pagos: [dosCol('Entregado', m(v.entregado)), dosCol('Cambio', m(v.cambio))],
+    cajero: 'Le atendió: ' + v.persona,
+    ref: 'Ticket ' + v.id.slice(-6).toUpperCase(),
+    pie: DB.ajustes.pie,
+  };
+}
+function imprimirNavegador(v) {
+  const t = textoTicket(v), c = s => s.length > ANCHO ? s : ' '.repeat(Math.floor((ANCHO - s.length) / 2)) + s;
+  $('#ticketPrint').textContent = [c(t.cabecera), c(t.fecha), ...t.cuerpo, t.total, '', ...t.pagos, '', t.cajero, t.ref, '', c(t.pie), ''].join('\n');
+  window.print();
+}
+
+/* ---- Web Bluetooth + ESC/POS genérico ---- */
+const SERVICIOS_IMPRESORA = [ // UUID habituales en ticketeras BLE baratas (GOOJPRT, MTP-II, PT-210, Xprinter, etc.)
+  '000018f0-0000-1000-8000-00805f9b34fb', 'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
+  '49535343-fe7d-4ae5-8fa9-9fafd205e455', '0000ff00-0000-1000-8000-00805f9b34fb',
+  '0000ffe0-0000-1000-8000-00805f9b34fb', '0000ae30-0000-1000-8000-00805f9b34fb',
+  '0000fee7-0000-1000-8000-00805f9b34fb', '0000ae00-0000-1000-8000-00805f9b34fb',
+];
+const Impresora = {
+  dev: null, car: null,
+  conectada() { return !!(this.car && this.dev && this.dev.gatt.connected); },
+  async conectar() {
+    if (!navigator.bluetooth) { alert('Este navegador no permite Bluetooth.\nUsa Chrome en Android y abre la app desde una dirección https.\nMientras tanto puedes usar "Imprimir (navegador)".'); return false; }
+    try {
+      this.dev = await navigator.bluetooth.requestDevice({acceptAllDevices: true, optionalServices: SERVICIOS_IMPRESORA});
+      this.dev.addEventListener('gattserverdisconnected', () => { this.car = null; pintarImpresora(); });
+      await this.enlazar(); pintarImpresora(); toast('Ticketera conectada: ' + (this.dev.name || ''));
+      return true;
+    } catch (e) { if (e.name !== 'NotFoundError') alert('No se pudo conectar: ' + e.message); pintarImpresora(); return false; }
+  },
+  async enlazar() {
+    const srv = await this.dev.gatt.connect();
+    const servicios = await srv.getPrimaryServices();
+    for (const s of servicios) {
+      for (const c of await s.getCharacteristics()) {
+        if (c.properties.write || c.properties.writeWithoutResponse) { this.car = c; return; }
+      }
+    }
+    throw new Error('No se encontró canal de impresión en este aparato');
+  },
+  async enviar(bytes) {
+    if (!this.conectada()) { if (this.dev) await this.enlazar(); else throw new Error('Ticketera no conectada'); }
+    const TROZO = 100; // las impresoras BLE suelen aceptar ~20-180 bytes por envío
+    for (let i = 0; i < bytes.length; i += TROZO) {
+      const parte = bytes.slice(i, i + TROZO);
+      if (this.car.properties.writeWithoutResponse && this.car.writeValueWithoutResponse) await this.car.writeValueWithoutResponse(parte);
+      else await this.car.writeValue(parte);
+      await new Promise(r => setTimeout(r, 20));
+    }
+  },
+};
+// Convierte texto a bytes. Por defecto quita acentos (lo más compatible); si no, usa la página de códigos PC850.
+const PC850 = {'á':0xA0,'é':0x82,'í':0xA1,'ó':0xA2,'ú':0xA3,'ñ':0xA4,'Ñ':0xA5,'Á':0xB5,'É':0x90,'Í':0xD6,'Ó':0xE0,'Ú':0xE9,'ü':0x81,'Ü':0x9A,'¡':0xAD,'¿':0xA8,'º':0xA7,'ª':0xA6,'ç':0x87,'Ç':0x80,'€':0xD5};
+function aBytes(txt) {
+  const out = [];
+  if (DB.ajustes.quitarAcentos) txt = txt.replace(/€/g, 'EUR').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[¡¿]/g, '');
+  for (const ch of txt) { const c = ch.charCodeAt(0); out.push(c < 128 ? c : (PC850[ch] ?? 0x3F)); }
+  return out;
+}
+function partir(s, n) { // corta en palabras para no partir "pueblo" en dos
+  const out = []; let l = '';
+  for (const w of s.split(/\s+/)) { if ((l + ' ' + w).trim().length > n && l) { out.push(l); l = w; } else l = (l + ' ' + w).trim(); }
+  if (l) out.push(l); return out.flatMap(x => x.match(new RegExp('.{1,' + n + '}', 'g')) || []);
+}
+function escposTicket(v) {
+  const t = textoTicket(v), ESC = 0x1B, GS = 0x1D, LF = 0x0A, b = [];
+  const txt = s => b.push(...aBytes(s), LF);
+  b.push(ESC, 0x40);                                    // inicializar
+  if (!DB.ajustes.quitarAcentos) b.push(ESC, 0x74, 0x02); // página de códigos PC850
+  b.push(ESC, 0x61, 0x01);                              // centrado
+  b.push(ESC, 0x21, 0x30); partir(t.cabecera, 16).forEach(txt); // doble alto/ancho (16 caracteres por línea)
+  b.push(ESC, 0x21, 0x00); txt(t.fecha);
+  b.push(ESC, 0x61, 0x00);                              // izquierda
+  t.cuerpo.forEach(txt);
+  b.push(ESC, 0x45, 0x01); txt(t.total); b.push(ESC, 0x45, 0x00); // negrita
+  t.pagos.forEach(txt); b.push(LF);
+  txt(t.cajero); txt(t.ref);
+  b.push(ESC, 0x61, 0x01); b.push(LF); txt(t.pie);
+  b.push(LF, LF, LF, LF);                               // avance para cortar a mano
+  b.push(GS, 0x56, 0x42, 0x00);                         // corte (lo ignoran las que no tienen cuchilla)
+  return new Uint8Array(b);
+}
+async function imprimirBT(v) {
+  try {
+    if (!Impresora.conectada() && !(await Impresora.conectar())) return;
+    await Impresora.enviar(escposTicket(v)); toast('Ticket impreso');
+  } catch (e) { alert('Error al imprimir: ' + e.message + '\nPuedes usar "Imprimir (navegador)".'); }
+}
+/* ---- Vales por consumición: un papelito por unidad (p. ej. 3 cervezas = 3 vales) ---- */
+function listaVales(v) {
+  const vales = []; v.lineas.forEach(l => { for (let i = 0; i < l.cant; i++) vales.push(l); });
+  return vales.map((l, i) => ({nombre: l.nombre, precio: l.precio, n: i + 1, de: vales.length}));
+}
+function escposVales(v) {
+  const ESC = 0x1B, GS = 0x1D, LF = 0x0A, b = [], m = c => (c / 100).toFixed(2).replace('.', ',');
+  const txt = s => b.push(...aBytes(s), LF);
+  b.push(ESC, 0x40);
+  if (!DB.ajustes.quitarAcentos) b.push(ESC, 0x74, 0x02);
+  for (const x of listaVales(v)) {
+    b.push(ESC, 0x61, 0x01, ESC, 0x21, 0x00); txt(DB.ajustes.fiesta);
+    txt('-'.repeat(ANCHO));
+    b.push(ESC, 0x21, 0x30); partir(x.nombre, 16).forEach(txt);        // producto en grande
+    b.push(ESC, 0x21, 0x10); txt(m(x.precio) + ' EUR');                // precio en doble alto
+    b.push(ESC, 0x21, 0x00); txt(fechaHora(v.ts));
+    txt('Ticket ' + v.id.slice(-6).toUpperCase() + '  ·  vale ' + x.n + '/' + x.de);
+    b.push(LF, LF, LF);                                                // avance para cortar a mano
+    b.push(GS, 0x56, 0x42, 0x00);                                      // corte entre vales (si tiene cuchilla)
+  }
+  return new Uint8Array(b);
+}
+function textoVales(v) {
+  const c = s => s.length >= ANCHO ? s : ' '.repeat(Math.floor((ANCHO - s.length) / 2)) + s, m = p => (p / 100).toFixed(2).replace('.', ',');
+  return listaVales(v).map(x => [c(DB.ajustes.fiesta), '-'.repeat(ANCHO), c(x.nombre.toUpperCase()), c(m(x.precio) + ' €'), c(fechaHora(v.ts)), c('Ticket ' + v.id.slice(-6).toUpperCase() + ' · vale ' + x.n + '/' + x.de), '', '-'.repeat(12) + ' cortar ' + '-'.repeat(12), ''].join('\n')).join('\n');
+}
+async function imprimirValesBT(v) {
+  try {
+    if (!Impresora.conectada() && !(await Impresora.conectar())) return;
+    await Impresora.enviar(escposVales(v)); toast(listaVales(v).length + ' vales impresos');
+  } catch (e) { alert('Error al imprimir: ' + e.message + '\nPuedes usar "Imprimir (navegador)".'); }
+}
+function imprimirValesNavegador(v) { $('#ticketPrint').textContent = textoVales(v); window.print(); }
+const imprimirVales = v => (navigator.bluetooth ? imprimirValesBT(v) : imprimirValesNavegador(v));
+// Lo que sale al cobrar / al pulsar «Ticketera»: un ticket por pedido (por defecto) o un vale por consumición.
+const imprimirPedidoBT = v => (DB.ajustes.valePorConsumicion ? imprimirValesBT(v) : imprimirBT(v));
+function pintarImpresora() { $('#estadoImp').textContent = Impresora.conectada() ? (Impresora.dev.name || 'Conectada') : 'Sin ticketera'; }
+$('#btnImpresora').onclick = $('#btnConectarImp').onclick = () => Impresora.conectar();
+$('#btnPruebaImp').onclick = () => imprimirBT({id: 'PRUEBA', ts: Date.now(), persona: persona() || 'Prueba', lineas: [{nombre: 'Prueba ñ á é', precio: 100, cant: 2}], total: 200, entregado: 500, cambio: 300});
+
+/* =====================================================================
+   GASTOS
+   ===================================================================== */
+$('#btnGuardarGasto').onclick = async () => {
+  const concepto = $('#gConcepto').value.trim(), importe = aCent($('#gImporte').value);
+  if (!concepto || importe <= 0) return toast('Pon concepto e importe');
+  const g = {id: uid(), ts: Date.now(), fecha: $('#gFecha').value || diaKey(Date.now()), concepto, importe,
+    pagadoPor: $('#gPagador').value.trim() || persona(), deCaja: $('#gDeCaja').checked,
+    turnoId: $('#gDeCaja').checked && DB.turnoActual ? DB.turnoActual.id : null, tieneFoto: false};
+  const f = $('#gFoto').files[0];
+  if (f) { try { await FotoDB.poner(g.id, await comprimirFoto(f)); g.tieneFoto = true; } catch (e) { toast('No se pudo guardar la foto'); } }
+  DB.gastos.push(g); guardar({tipo: 'gasto', datos: g});
+  ['#gConcepto', '#gImporte', '#gFoto'].forEach(s => $(s).value = ''); $('#gDeCaja').checked = false;
+  pintarTodo(); toast('Gasto guardado');
+};
+async function pintarGastos() {
+  $('#gFecha').value = $('#gFecha').value || diaKey(Date.now());
+  if (!$('#gPagador').value) $('#gPagador').value = persona();
+  $('#listaPersonas').innerHTML = [...new Set([...usuariosActivos().map(u => u.nombre), ...DB.personas])].map(p => `<option value="${esc(p)}">`).join('');
+  const gs = [...DB.gastos].sort((a, b) => b.fecha.localeCompare(a.fecha) || b.ts - a.ts);
+  const total = gs.reduce((s, g) => s + g.importe, 0);
+  $('#listaGastos').innerHTML = gs.length ? `<table><thead><tr><th>Fecha</th><th>Concepto</th><th>Pagó</th><th class="n">Importe</th><th></th></tr></thead><tbody>` +
+    gs.map(g => `<tr><td>${diaBonito(g.fecha).slice(0, 5)}</td><td>${esc(g.concepto)}${g.deCaja ? ' <span class="muted">(caja)</span>' : ''}${g.tieneFoto ? `<br><img class="thumb" data-foto="${g.id}" alt="tique">` : ''}</td><td>${esc(g.pagadoPor)}</td><td class="n">${eur(g.importe)}</td><td><button data-del="${g.id}" style="padding:6px 10px">🗑️</button></td></tr>`).join('') +
+    `</tbody><tfoot><tr><td colspan="3">Total gastos</td><td class="n">${eur(total)}</td><td></td></tr></tfoot></table>` : '<p class="muted">Sin gastos todavía.</p>';
+  for (const img of $$('#listaGastos [data-foto]')) {
+    img.src = await FotoDB.coger(img.dataset.foto) || '';
+    img.onclick = () => { const w = window.open(); if (w) w.document.write(`<img src="${img.src}" style="max-width:100%">`); };
+  }
+  $$('#listaGastos [data-del]').forEach(b => b.onclick = async () => {
+    if (!confirm('¿Borrar este gasto?')) return;
+    DB.gastos = DB.gastos.filter(g => g.id !== b.dataset.del); await FotoDB.borrar(b.dataset.del);
+    guardar({tipo: 'borrarGasto', id: b.dataset.del}); pintarTodo();
+  });
+}
+
+/* =====================================================================
+   CIERRE DE CAJA POR TURNO
+   ===================================================================== */
+function datosTurno(t) {
+  const vs = ventasValidas().filter(v => v.turnoId === t.id);
+  const ventas = vs.reduce((s, v) => s + v.total, 0);
+  const gastosCaja = DB.gastos.filter(g => g.deCaja && g.turnoId === t.id).reduce((s, g) => s + g.importe, 0);
+  return {nVentas: vs.length, ventas, gastosCaja, esperado: t.fondo + ventas - gastosCaja};
+}
+function pintarCierre() {
+  const t = DB.turnoActual;
+  $('#cierreAcciones').style.display = 'none';
+  if (!t) { $('#cierreResumen').innerHTML = '<p>No hay turno abierto.</p>'; return; }
+  const propio = !!(sesion && t.usuarioId === sesion.id), admin = !!(sesion && sesion.rol === 'superadmin');
+  if (sesion && sesion.rol === 'cajero' && !propio) { $('#cierreResumen').innerHTML = `<p>🔒 En caja está <b>${esc(enCajaTexto())}</b>. Solo esa persona o un superadmin pueden cerrar su turno.</p>`; return; }
+  const d = datosTurno(t);
+  $('#cierreResumen').innerHTML = `<table>
+    <tr><td>Persona en caja</td><td class="n"><b>${esc(t.persona)}</b>${t.usuarioId ? '' : ' <span class="rol">turno antiguo</span>'}</td></tr>
+    <tr><td>Hora de entrada</td><td class="n">${fechaHora(t.inicio)}</td></tr>
+    <tr><td>Efectivo inicial</td><td class="n">${eur(t.fondo)}</td></tr>
+    <tr><td>Ventas registradas (${d.nVentas})</td><td class="n">+ ${eur(d.ventas)}</td></tr>
+    <tr><td>Gastos pagados de la caja</td><td class="n">− ${eur(d.gastosCaja)}</td></tr>
+    <tfoot><tr><td>Debería haber en caja</td><td class="n">${eur(d.esperado)}</td></tr></tfoot></table>` +
+    (propio || admin ? '' : `<p class="muted">Solo ${esc(t.persona)} (con su PIN) o un superadmin pueden cerrar este turno.</p>`);
+  if (propio || admin) {
+    $('#cierreAcciones').style.display = '';
+    $('#btnCerrarTurno').style.display = propio ? '' : 'none';
+    $('#btnForzarCierre').style.display = admin && !propio ? '' : 'none';
+  }
+  calcDiferencia();
+}
+function calcDiferencia() {
+  const t = DB.turnoActual; if (!t) return;
+  const el = $('#cDiferencia');
+  if ($('#cContado').value === '') { el.innerHTML = ''; return; }
+  const dif = aCent($('#cContado').value) - datosTurno(t).esperado;
+  el.innerHTML = dif === 0 ? '<div class="aviso verde">✅ Cuadra perfecto. Diferencia: 0,00 €</div>'
+    : dif > 0 ? `<div class="aviso">Sobran <b>${eur(dif)}</b></div>` : `<div class="aviso rojo">Faltan <b>${eur(-dif)}</b></div>`;
+}
+$('#cContado').oninput = calcDiferencia;
+async function cerrarTurno(forzado) {
+  recargarDB();
+  const t = DB.turnoActual; if (!t || !sesion) return pintarTodo();
+  const propio = t.usuarioId === sesion.id;
+  if (forzado ? sesion.rol !== 'superadmin' : !propio) return toast('No tienes permiso para cerrar este turno');
+  if ($('#cContado').value === '') return toast('Cuenta el efectivo y escríbelo');
+  const d = datosTurno(t), contado = aCent($('#cContado').value);
+  let motivo = '';
+  if (forzado) {
+    motivo = prompt(`Vas a FORZAR el cierre del turno de ${t.persona}.\nQuedará registrado a tu nombre (${sesion.nombre}).\nContado: ${eur(contado)} · Diferencia: ${eur(contado - d.esperado)}\n\nMotivo (opcional):`, '');
+    if (motivo === null) return;
+  } else if (!confirm(`¿Cerrar tu turno, ${t.persona}?\nContado: ${eur(contado)} · Diferencia: ${eur(contado - d.esperado)}`)) return;
+  if (!(await pedirPin(sesion, forzado ? 'Confirma el cierre forzado' : 'Confirma el cierre de tu turno'))) return;
+  if (!DB.turnoActual || DB.turnoActual.id !== t.id) return pintarTodo();
+  const cerrado = {...t, fin: Date.now(), nVentas: d.nVentas, ventas: d.ventas, gastosCaja: d.gastosCaja, esperado: d.esperado, contado, diferencia: contado - d.esperado,
+    cerradoPor: sesion.nombre, cerradoPorId: sesion.id, forzado: !!forzado, motivo: (motivo || '').trim()};
+  DB.turnos.push(cerrado); DB.turnoActual = null;
+  registrar(forzado ? 'cierreForzado' : 'salida', (forzado ? `Cierra el turno de ${t.persona} (entrada ${fechaHora(t.inicio)}). ` + (cerrado.motivo ? 'Motivo: ' + cerrado.motivo + '. ' : '') : '') +
+    `Contado ${eur(contado)} · diferencia ${eur(contado - d.esperado)}`, {turnoId: t.id});
+  await soltarCandadoCaja(cerrado);
+  guardar({tipo: 'cerrarTurno', datos: cerrado});
+  $('#cContado').value = ''; carrito = [];
+  irA('cierre'); toast(forzado ? 'Turno cerrado (forzado)' : 'Turno cerrado. Descarga los datos para Contabilidad.');
+}
+$('#btnCerrarTurno').onclick = () => cerrarTurno(false);
+$('#btnForzarCierre').onclick = () => cerrarTurno(true);
+const duracion = (a, b) => { const m = Math.round((b - a) / 60000); return Math.floor(m / 60) + ' h ' + pad(m % 60) + ' min'; };
+function pintarTurnos() {
+  let ts = [...DB.turnos].reverse();
+  if (sesion && sesion.rol === 'cajero') ts = ts.filter(t => t.usuarioId === sesion.id);
+  $('#listaTurnos').innerHTML = ts.length ? `<table><thead><tr><th>Persona</th><th>Entrada → salida</th><th class="n">Ventas</th><th class="n">Contado</th><th class="n">Dif.</th></tr></thead><tbody>` +
+    ts.map(t => `<tr><td>${esc(t.persona)}${t.forzado ? `<br><span class="muted">⚠️ forzado por ${esc(t.cerradoPor)}</span>` : ''}${t.origen ? `<br><span class="muted">📱 de otro móvil</span>` : ''}</td><td>${fechaHora(t.inicio).slice(0, 5)} ${hora(t.inicio)} → ${hora(t.fin)}</td><td class="n">${eur(t.ventas)}</td><td class="n">${eur(t.contado)}</td><td class="n" style="color:${t.diferencia < 0 ? 'var(--rojo)' : t.diferencia > 0 ? '#b7950b' : 'var(--verde)'}">${eur(t.diferencia)}</td></tr>`).join('') + '</tbody></table>' : '<p class="muted">Ningún turno cerrado todavía.</p>';
+}
+
+/* =====================================================================
+   CONTABILIDAD
+   ===================================================================== */
+function calcularInforme() {
+  const dias = {}, pers = {}, prods = {};
+  const D = k => dias[k] ??= {dia: k, ingresos: 0, gastos: 0, nVentas: 0};
+  const P = k => pers[k] ??= {persona: k, ingresos: 0, nVentas: 0, gastos: 0, difCaja: 0};
+  ventasValidas().forEach(v => {
+    const d = D(diaKey(v.ts)); d.ingresos += v.total; d.nVentas++;
+    const p = P(v.persona); p.ingresos += v.total; p.nVentas++;
+    v.lineas.forEach(l => { const x = prods[l.nombre] ??= {producto: l.nombre, unidades: 0, importe: 0}; x.unidades += l.cant; x.importe += l.cant * l.precio; });
+  });
+  DB.gastos.forEach(g => { D(g.fecha).gastos += g.importe; P(g.pagadoPor || '—').gastos += g.importe; });
+  DB.turnos.forEach(t => { P(t.persona).difCaja += t.diferencia; });
+  const L = o => Object.values(o);
+  const ingresos = L(dias).reduce((s, d) => s + d.ingresos, 0), gastos = L(dias).reduce((s, d) => s + d.gastos, 0);
+  return {dias: L(dias).sort((a, b) => a.dia.localeCompare(b.dia)), personas: L(pers).sort((a, b) => b.ingresos - a.ingresos),
+    productos: L(prods).sort((a, b) => b.importe - a.importe), ingresos, gastos, beneficio: ingresos - gastos};
+}
+function pintarInforme() {
+  const r = calcularInforme();
+  $('#kpis').innerHTML = `<div class="kpi">Ingresos<b>${eur(r.ingresos)}</b></div><div class="kpi">Gastos<b>${eur(r.gastos)}</b></div><div class="kpi">Beneficio<b style="color:${r.beneficio < 0 ? 'var(--rojo)' : 'var(--verde)'}">${eur(r.beneficio)}</b></div>`;
+  $('#tablaDias').innerHTML = r.dias.length ? `<table><thead><tr><th>Día</th><th class="n">Ventas</th><th class="n">Ingresos</th><th class="n">Gastos</th><th class="n">Beneficio</th></tr></thead><tbody>` +
+    r.dias.map(d => `<tr><td>${diaBonito(d.dia)}</td><td class="n">${d.nVentas}</td><td class="n">${eur(d.ingresos)}</td><td class="n">${eur(d.gastos)}</td><td class="n">${eur(d.ingresos - d.gastos)}</td></tr>`).join('') +
+    `</tbody><tfoot><tr><td>Total</td><td class="n">${r.dias.reduce((s, d) => s + d.nVentas, 0)}</td><td class="n">${eur(r.ingresos)}</td><td class="n">${eur(r.gastos)}</td><td class="n">${eur(r.beneficio)}</td></tr></tfoot></table>` : '<p class="muted">Sin datos.</p>';
+  $('#tablaPersonas').innerHTML = r.personas.length ? `<table><thead><tr><th>Persona</th><th class="n">Ventas</th><th class="n">Cobrado</th><th class="n">Gastos</th><th class="n">Dif. caja</th></tr></thead><tbody>` +
+    r.personas.map(p => `<tr><td>${esc(p.persona)}</td><td class="n">${p.nVentas}</td><td class="n">${eur(p.ingresos)}</td><td class="n">${eur(p.gastos)}</td><td class="n">${eur(p.difCaja)}</td></tr>`).join('') + '</tbody></table>' : '<p class="muted">Sin datos.</p>';
+  const es = entradasSalidas();
+  $('#tablaEntradas').innerHTML = es.length ? `<table><thead><tr><th>Persona</th><th>Entrada</th><th>Salida</th><th class="n">Tiempo</th><th>Cerró</th></tr></thead><tbody>` +
+    es.map(t => `<tr><td>${esc(t.persona)}</td><td>${fechaHora(t.inicio)}</td><td>${t.fin ? fechaHora(t.fin) : '<b>en caja</b>'}</td><td class="n">${duracion(t.inicio, t.fin || Date.now())}</td><td>${t.fin ? esc(t.cerradoPor || t.persona) + (t.forzado ? ' ⚠️ forzado' : '') : ''}</td></tr>`).join('') + '</tbody></table>' : '<p class="muted">Sin turnos.</p>';
+  const reg = [...DB.registro].reverse().slice(0, 200);
+  $('#tablaRegistro').innerHTML = reg.length ? `<table><thead><tr><th>Fecha y hora</th><th>Quién</th><th>Qué</th></tr></thead><tbody>` +
+    reg.map(e => `<tr><td>${fechaHora(e.ts)}</td><td>${esc(e.nombre)}${e.rol ? `<br><span class="muted">${ROLES[e.rol] || esc(e.rol)}</span>` : ''}</td><td>${TIPOS[e.tipo] || esc(e.tipo)}${e.detalle ? `<br><span class="muted">${esc(e.detalle)}</span>` : ''}</td></tr>`).join('') + '</tbody></table>' +
+    (DB.registro.length > 200 ? '<p class="muted">Se muestran los 200 últimos. El registro completo está en la exportación.</p>' : '') : '<p class="muted">Sin registros todavía.</p>';
+  $('#tablaProductos').innerHTML = r.productos.length ? `<table><thead><tr><th>Producto</th><th class="n">Unidades</th><th class="n">Importe</th></tr></thead><tbody>` +
+    r.productos.map(p => `<tr><td>${esc(p.producto)}</td><td class="n">${p.unidades}</td><td class="n">${eur(p.importe)}</td></tr>`).join('') + '</tbody></table>' : '<p class="muted">Sin datos.</p>';
+}
+
+/* ---- Exportación ---- */
+// Turnos cerrados + el abierto (si lo hay), los más recientes primero.
+const entradasSalidas = () => [...DB.turnos, ...(DB.turnoActual ? [DB.turnoActual] : [])].sort((a, b) => b.inicio - a.inicio);
+function hojas() {
+  const r = calcularInforme();
+  return {
+    resumen: [['Día', 'Nº ventas', 'Ingresos', 'Gastos', 'Beneficio'], ...r.dias.map(d => [diaBonito(d.dia), d.nVentas, num(d.ingresos), num(d.gastos), num(d.ingresos - d.gastos)]),
+      ['TOTAL', r.dias.reduce((s, d) => s + d.nVentas, 0), num(r.ingresos), num(r.gastos), num(r.beneficio)], [],
+      ['Persona', 'Nº ventas', 'Cobrado', 'Gastos pagados', 'Diferencia de caja'], ...r.personas.map(p => [p.persona, p.nVentas, num(p.ingresos), num(p.gastos), num(p.difCaja)])],
+    ventas: [['Id', 'Fecha y hora', 'Día', 'Cobró', 'Total', 'Entregado', 'Cambio', 'Anulada', 'Detalle'],
+      ...DB.ventas.map(v => [v.id, fechaHora(v.ts), diaBonito(diaKey(v.ts)), v.persona, num(v.total), num(v.entregado), num(v.cambio), v.anulada ? 'Sí' : 'No', v.lineas.map(l => l.cant + 'x ' + l.nombre).join(', ')])],
+    lineas: [['Id venta', 'Fecha y hora', 'Cobró', 'Producto', 'Cantidad', 'Precio', 'Importe'],
+      ...ventasValidas().flatMap(v => v.lineas.map(l => [v.id, fechaHora(v.ts), v.persona, l.nombre, l.cant, num(l.precio), num(l.cant * l.precio)]))],
+    gastos: [['Id', 'Fecha', 'Concepto', 'Importe', 'Pagó', 'De la caja', 'Foto'],
+      ...DB.gastos.map(g => [g.id, diaBonito(g.fecha), g.concepto, num(g.importe), g.pagadoPor, g.deCaja ? 'Sí' : 'No', g.tieneFoto ? 'Sí' : 'No'])],
+    turnos: [['Persona', 'Hora de entrada', 'Hora de salida', 'Efectivo inicial', 'Nº ventas', 'Ventas', 'Gastos de caja', 'Esperado', 'Contado', 'Diferencia', 'Cerrado por', 'Cierre forzado', 'Motivo', 'Móvil de origen'],
+      ...DB.turnos.map(t => [t.persona, fechaHora(t.inicio), fechaHora(t.fin), num(t.fondo), t.nVentas, num(t.ventas), num(t.gastosCaja), num(t.esperado), num(t.contado), num(t.diferencia), t.cerradoPor || t.persona, t.forzado ? 'Sí' : 'No', t.motivo || '', t.origen || 'este']),
+      ...(DB.turnoActual ? [[DB.turnoActual.persona, fechaHora(DB.turnoActual.inicio), '(en caja)', num(DB.turnoActual.fondo), '', '', '', '', '', '', '', '', '', 'este']] : [])],
+    accesos: [['Fecha y hora', 'Evento', 'Usuario', 'Rol', 'Detalle', 'Id turno', 'Id'],
+      ...DB.registro.map(e => [fechaHora(e.ts), (TIPOS[e.tipo] || e.tipo).replace(/^[^A-Za-zÁÉÍÓÚÑáéíóúñ]+/, ''), e.nombre, ROLES[e.rol] || e.rol, e.detalle, e.turnoId || '', e.id])],
+  };
+}
+function descargar(nombre, contenido, tipo) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([contenido], {type: tipo})); a.download = nombre;
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+const sufijo = () => diaKey(Date.now());
+function aCSV(filas) { return '\uFEFF' + filas.map(f => f.map(c => { c = String(c ?? ''); return /[;"\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c; }).join(';')).join('\r\n'); }
+const puedeExportar = () => !!(sesion && (sesion.rol === 'superadmin' || sesion.rol === 'contabilidad'));
+$$('[data-csv]').forEach(b => b.onclick = () => puedeExportar() && descargar(`caja-${b.dataset.csv}-${sufijo()}.csv`, aCSV(hojas()[b.dataset.csv]), 'text/csv;charset=utf-8'));
+// Excel: formato "Hoja de cálculo XML 2003" (varias pestañas en un archivo, sin librerías). Excel puede avisar del formato al abrir: aceptar.
+$('#btnExcel').onclick = () => {
+  if (!puedeExportar()) return;
+  const x = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+  const celda = c => { const s = String(c ?? ''); const n = /^-?\d+(,\d+)?$/.test(s) ? s.replace(',', '.') : null; return n !== null ? `<Cell><Data ss:Type="Number">${n}</Data></Cell>` : `<Cell><Data ss:Type="String">${x(s)}</Data></Cell>`; };
+  const H = hojas(), nombres = {resumen: 'Resumen', ventas: 'Ventas', lineas: 'Lineas', gastos: 'Gastos', turnos: 'Turnos', accesos: 'Accesos'};
+  const xml = '<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">' +
+    Object.keys(H).map(k => `<Worksheet ss:Name="${nombres[k]}"><Table>${H[k].map(f => '<Row>' + f.map(celda).join('') + '</Row>').join('')}</Table></Worksheet>`).join('') + '</Workbook>';
+  descargar(`caja-fiestas-${sufijo()}.xls`, xml, 'application/vnd.ms-excel');
+};
+
+/* =====================================================================
+   AJUSTES Y PRODUCTOS
+   ===================================================================== */
+function pintarAjustes() {
+  $('#aFiesta').value = DB.ajustes.fiesta; $('#aPie').value = DB.ajustes.pie;
+  $('#aAuto').checked = DB.ajustes.autoImprimir; $('#aAcentos').checked = DB.ajustes.quitarAcentos; $('#aVales').checked = !!DB.ajustes.valePorConsumicion;
+  if (document.activeElement !== $('#aBloqueo')) $('#aBloqueo').value = DB.ajustes.bloqueoMin || 3;
+  pintarUsuarios();
+  $('#avisoEjemplo2').innerHTML = DB.productosSonEjemplo ? '<p class="muted">Este móvil aún tiene la lista de productos del prototipo (ya hay ventas y no se ha tocado). Pulsa «Cargar productos de las fiestas» para cambiarla.</p>' : '';
+  $('#listaProductosEdit').innerHTML = DB.productos.map(p => `<div class="card" style="display:flex;gap:6px;align-items:center;padding:8px" data-pid="${p.id}">
+    <input value="${esc(p.emoji)}" data-f="emoji" style="width:56px;text-align:center" aria-label="Icono">
+    <input value="${esc(p.nombre)}" data-f="nombre" aria-label="Nombre">
+    <input value="${(p.precio / 100).toFixed(2)}" data-f="precio" type="number" inputmode="decimal" step="0.05" style="width:96px" aria-label="Precio">
+    <button data-borrar="${p.id}" style="padding:10px">🗑️</button></div>`).join('');
+  $$('#listaProductosEdit [data-f]').forEach(inp => inp.onchange = () => {
+    const p = DB.productos.find(x => x.id === inp.closest('[data-pid]').dataset.pid), f = inp.dataset.f;
+    p[f] = f === 'precio' ? aCent(inp.value) : inp.value.trim();
+    DB.productosSonEjemplo = false; guardar({tipo: 'producto', datos: p}); pintarProductos(); pintarCarrito(); toast('Producto actualizado');
+  });
+  $$('#listaProductosEdit [data-borrar]').forEach(b => b.onclick = () => {
+    if (!confirm('¿Quitar este producto?')) return;
+    DB.productos = DB.productos.filter(p => p.id !== b.dataset.borrar); DB.productosSonEjemplo = false;
+    carrito = carrito.filter(l => l.id !== b.dataset.borrar); guardar({tipo: 'borrarProducto', id: b.dataset.borrar}); pintarTodo();
+  });
+}
+/* ---- Gestión de usuarios (solo superadmin) ---- */
+const esAdmin = () => !!(sesion && sesion.rol === 'superadmin');
+const superadminsActivos = () => usuariosActivos().filter(u => u.rol === 'superadmin');
+function pintarUsuarios() {
+  const us = [...DB.usuarios].sort((a, b) => (b.activo - a.activo) || a.nombre.localeCompare(b.nombre));
+  $('#listaUsuarios').innerHTML = us.length ? `<table><thead><tr><th>Usuario</th><th>Rol</th><th></th></tr></thead><tbody>` + us.map(u => `<tr data-uid="${u.id}" style="${u.activo ? '' : 'color:#999'}">
+    <td><b>${esc(u.nombre)}</b>${u.activo ? '' : ' <span class="rol">de baja</span>'}${sesion && u.id === sesion.id ? ' <span class="rol">tú</span>' : ''}</td>
+    <td><select data-rol style="padding:6px;min-width:120px" ${u.activo ? '' : 'disabled'}>${Object.entries(ROLES).map(([k, n]) => `<option value="${k}" ${u.rol === k ? 'selected' : ''}>${n}</option>`).join('')}</select></td>
+    <td style="white-space:nowrap">${u.activo ? '<button data-pin style="padding:6px 10px">PIN</button> <button data-baja style="padding:6px 10px">Baja</button>' : '<button data-alta style="padding:6px 10px">Reactivar</button>'}</td></tr>`).join('') + '</tbody></table>' : '';
+  const U = el => usuarioPorId(el.closest('[data-uid]').dataset.uid);
+  $$('#listaUsuarios [data-rol]').forEach(sel => sel.onchange = () => {
+    const u = U(sel), nuevo = sel.value;
+    if (!esAdmin()) return;
+    if (u.rol === 'superadmin' && nuevo !== 'superadmin' && superadminsActivos().length <= 1) { sel.value = u.rol; return alert('Tiene que quedar al menos un superadmin.'); }
+    if (DB.turnoActual && DB.turnoActual.usuarioId === u.id && !puedeVenderRol(nuevo)) { sel.value = u.rol; return alert(`${u.nombre} tiene el turno de caja abierto. Ciérralo antes de quitarle la caja.`); }
+    registrar('usuario', `Cambio de rol de ${u.nombre}: ${ROLES[u.rol]} → ${ROLES[nuevo]}`); u.rol = nuevo;
+    guardar({tipo: 'usuario', id: u.id}); pintarTodo(); toast('Rol cambiado');
+  });
+  $$('#listaUsuarios [data-pin]').forEach(b => b.onclick = async () => {
+    const u = U(b); if (!esAdmin()) return;
+    const pin = await pedirNuevoPin(u.nombre); if (!pin) return;
+    u.sal = nuevaSal(); u.hash = await hashPin(pin, u.sal);
+    registrar('usuario', 'Cambio de PIN de ' + u.nombre); guardar({tipo: 'usuario', id: u.id}); toast('PIN cambiado');
+  });
+  $$('#listaUsuarios [data-baja]').forEach(b => b.onclick = () => {
+    const u = U(b); if (!esAdmin()) return;
+    if (u.id === sesion.id) return alert('No puedes darte de baja a ti mismo. Pide a otro superadmin que lo haga.');
+    if (u.rol === 'superadmin' && superadminsActivos().length <= 1) return alert('Tiene que quedar al menos un superadmin.');
+    if (DB.turnoActual && DB.turnoActual.usuarioId === u.id) return alert(`${u.nombre} tiene el turno de caja abierto. Ciérralo (o fuerza el cierre) antes.`);
+    if (!confirm(`¿Dar de baja a ${u.nombre}? No podrá entrar. Sus ventas y turnos se conservan.`)) return;
+    u.activo = false; registrar('usuario', 'Baja de ' + u.nombre); guardar({tipo: 'usuario', id: u.id}); pintarTodo();
+  });
+  $$('#listaUsuarios [data-alta]').forEach(b => b.onclick = () => {
+    const u = U(b); if (!esAdmin()) return;
+    if (!nombreLibre(u.nombre, u.id)) return alert('Ya hay otro usuario activo con ese nombre.');
+    u.activo = true; registrar('usuario', 'Reactivación de ' + u.nombre); guardar({tipo: 'usuario', id: u.id}); pintarTodo();
+  });
+}
+$('#btnAltaUsuario').onclick = async () => {
+  if (!esAdmin()) return;
+  const nombre = $('#uNombre').value.trim(), rol = $('#uRol').value, p1 = $('#uPin').value.trim(), p2 = $('#uPin2').value.trim();
+  if (!nombre) return toast('Escribe el nombre');
+  if (!nombreLibre(nombre)) return toast('Ya hay un usuario con ese nombre');
+  if (!pinValido(p1)) return toast('El PIN tiene que ser de 4 números');
+  if (p1 !== p2) return toast('Los dos PIN no coinciden');
+  const u = await crearUsuario(nombre, rol, p1);
+  registrar('usuario', `Alta de ${nombre} (${ROLES[rol]})`); guardar({tipo: 'usuario', id: u.id});
+  ['#uNombre', '#uPin', '#uPin2'].forEach(x => $(x).value = ''); $('#uRol').value = 'cajero';
+  pintarTodo(); toast('Usuario creado: ' + nombre);
+};
+$('#btnCargarProductos').onclick = () => {
+  if (!esAdmin()) return;
+  if (!confirm('¿Sustituir la lista de productos por la de las fiestas (Botellín Mahou, Cubo 5 botellines, Agua, Refrescos, Copas, Tinto de verano, Mojito, Perritos)?\nLas ventas ya hechas NO se tocan.')) return;
+  DB.productos = productosFiestas(); DB.productosSonEjemplo = false; carrito = [];
+  registrar('datos', 'Carga de los productos de las fiestas'); guardar({tipo: 'productos'}); pintarTodo(); toast('Productos de las fiestas cargados');
+};
+$('#btnNuevoProducto').onclick = () => { DB.productos.push({id: uid(), nombre: 'Nuevo producto', precio: 100, emoji: '🎉', activo: true}); DB.productosSonEjemplo = false; guardar({tipo: 'producto'}); pintarTodo(); };
+$('#btnGuardarAjustes').onclick = () => {
+  if (!esAdmin()) return;
+  Object.assign(DB.ajustes, {fiesta: $('#aFiesta').value.trim() || 'Fiestas', pie: $('#aPie').value.trim(), autoImprimir: $('#aAuto').checked, quitarAcentos: $('#aAcentos').checked,
+    valePorConsumicion: $('#aVales').checked, bloqueoMin: Math.min(60, Math.max(1, parseInt($('#aBloqueo').value, 10) || 3))});
+  guardar({tipo: 'ajustes'}); pintarTodo(); toast('Ajustes guardados');
+};
+$('#btnBackup').onclick = async () => {
+  const fotos = {}; for (const g of DB.gastos.filter(g => g.tieneFoto)) fotos[g.id] = await FotoDB.coger(g.id);
+  descargar(`caja-fiestas-copia-${sufijo()}.json`, JSON.stringify({DB, fotos}), 'application/json');
+};
+$('#btnRestaurar').onclick = () => $('#fileRestaurar').click();
+$('#fileRestaurar').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const d = JSON.parse(await f.text()); if (!d.DB || !d.DB.ventas) throw new Error('Archivo no válido');
+    if (!confirm('Esto sustituye los datos de este dispositivo. ¿Seguir?')) return;
+    if (!esAdmin()) return;
+    const usuarios = DB.usuarios, registroPrevio = DB.registro, quien = sesion;
+    DB = Object.assign(estadoInicial(), d.DB);
+    if (!d.DB.usuarios || !d.DB.usuarios.length) DB.usuarios = usuarios;   // copia antigua sin usuarios: se mantienen los actuales
+    if (!d.DB.registro) DB.registro = registroPrevio;
+    recargarSesion(quien); registrar('datos', 'Copia restaurada desde ' + f.name, {quien});
+    for (const [id, u] of Object.entries(d.fotos || {})) if (u) await FotoDB.poner(id, u);
+    guardar({tipo: 'restaurar'}); pintarTodo(); toast('Copia restaurada');
+  } catch (err) { alert('No se pudo restaurar: ' + err.message); }
+  e.target.value = '';
+};
+$('#btnBorrarTodo').onclick = async () => {
+  if (!esAdmin()) return;
+  if (DB.turnoActual) return alert('Hay un turno abierto. Ciérralo antes de borrar los datos.');
+  if (!confirm('¿Borrar TODAS las ventas, gastos y turnos de este dispositivo?')) return;
+  if (prompt('Escribe BORRAR para confirmar') !== 'BORRAR') return;
+  // Se conservan los usuarios (y sus PIN) para no dejar la app sin superadmin; el registro empieza de cero con esta anotación.
+  const usuarios = DB.usuarios, quien = sesion;
+  DB = estadoInicial(); DB.usuarios = usuarios; recargarSesion(quien); registrar('datos', 'Borrado de todos los datos de ventas, gastos y turnos', {quien});
+  await FotoDB.vaciar(); guardar({tipo: 'borrarTodo'}); carrito = []; pintarTodo(); toast('Datos borrados');
+};
+
+/* =====================================================================
+   PASAR DATOS ENTRE MÓVILES — SOLUCIÓN PROVISIONAL hasta la sincronización
+   ---------------------------------------------------------------------
+   Solo cobra UN móvil a la vez: el de la persona que está en caja (puede
+   cambiar de móvil entre turnos). Por eso usuarios/PIN y ventas acaban en
+   móviles distintos. Mientras no haya sincronización:
+     · «Configuración» (usuarios con su hash de PIN + productos + ajustes):
+       el superadmin la exporta en un archivo JSON y la importa en cada móvil.
+     · «Datos para Contabilidad» (ventas, turnos, gastos, fotos y registro de
+       accesos de ESTE móvil, sin usuarios ni PIN): se descargan al cerrar el
+       turno y Contabilidad los FUSIONA en su móvil sin duplicar (por id).
+   ===================================================================== */
+const ID_DISPOSITIVO = (() => { let d = localStorage.getItem('cajaFiestas.dispositivo'); if (!d) { d = 'movil-' + uid(); localStorage.setItem('cajaFiestas.dispositivo', d); } return d; })();
+const marcaArchivo = () => diaKey(Date.now()) + '-' + pad(new Date().getHours()) + pad(new Date().getMinutes());
+async function exportarDatosMovil() {
+  if (!sesion) return;
+  const fotos = {}; for (const g of DB.gastos.filter(g => g.tieneFoto)) fotos[g.id] = await FotoDB.coger(g.id);
+  const quien = sesion.nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9]+/g, '-');
+  registrar('datos', 'Descarga de datos de este móvil para Contabilidad'); guardar({tipo: 'acceso'});
+  descargar(`caja-datos-${quien}-${marcaArchivo()}.json`, JSON.stringify({tipo: 'cajaFiestas-datos', version: 2, dispositivo: ID_DISPOSITIVO, exportadoPor: sesion.nombre, ts: Date.now(),
+    ventas: DB.ventas, turnos: DB.turnos, gastos: DB.gastos, registro: DB.registro, personas: DB.personas, fotos}), 'application/json');
+}
+// Fusiona sin duplicar: añade lo que no existe (por id) y actualiza ventas anuladas.
+async function fusionarDatos(d, nombreArchivo) {
+  const src = d.tipo === 'cajaFiestas-datos' ? d : d.DB;   // también vale una copia de seguridad completa
+  if (!src || !Array.isArray(src.ventas)) throw new Error('El archivo no tiene datos de la caja');
+  const r = {ventas: 0, turnos: 0, gastos: 0, registro: 0, anuladas: 0};
+  const fus = (k, extra) => { const ids = new Set(DB[k].map(x => x.id)); for (const x of src[k] || []) { if (!x || !x.id) continue; if (!ids.has(x.id)) { DB[k].push(extra ? {...x, ...extra} : x); ids.add(x.id); r[k]++; } } };
+  fus('ventas'); fus('turnos', d.dispositivo && d.dispositivo !== ID_DISPOSITIVO ? {origen: d.dispositivo} : null); fus('gastos'); fus('registro');
+  for (const v of src.ventas) { const mia = DB.ventas.find(x => x.id === v.id); if (mia && v.anulada && !mia.anulada) { mia.anulada = true; mia.anuladaPor = v.anuladaPor; r.anuladas++; } }
+  for (const p of src.personas || []) if (!DB.personas.includes(p)) DB.personas.push(p);
+  const fotos = d.fotos || {}; for (const [id, u] of Object.entries(fotos)) if (u && DB.gastos.some(g => g.id === id)) await FotoDB.poner(id, u);
+  DB.ventas.sort((a, b) => a.ts - b.ts); DB.turnos.sort((a, b) => a.inicio - b.inicio); DB.registro.sort((a, b) => a.ts - b.ts);
+  registrar('datos', `Fusión de ${nombreArchivo}${d.exportadoPor ? ' (de ' + d.exportadoPor + ')' : ''}: +${r.ventas} ventas, +${r.turnos} turnos, +${r.gastos} gastos, +${r.registro} registros`);
+  guardar({tipo: 'fusion'}); return r;
+}
+$('#btnDatosMovil').onclick = exportarDatosMovil;
+$('#btnFusionar').onclick = () => $('#fileFusionar').click();
+$('#fileFusionar').onchange = async e => {
+  const files = [...e.target.files]; e.target.value = '';
+  if (!puedeExportar()) return;
+  const msgs = [];
+  for (const f of files) {
+    try { const r = await fusionarDatos(JSON.parse(await f.text()), f.name); msgs.push(`${f.name}: +${r.ventas} ventas, +${r.turnos} turnos, +${r.gastos} gastos${r.anuladas ? ', ' + r.anuladas + ' anuladas' : ''} (lo repetido se ignora)`); }
+    catch (err) { msgs.push(`${f.name}: no se pudo juntar (${err.message})`); }
+  }
+  pintarTodo(); alert(msgs.join('\n'));
+};
+// Configuración: usuarios (con hash y sal, nunca el PIN) + productos + ajustes
+$('#btnExpConfig').onclick = () => {
+  if (!esAdmin()) return;
+  registrar('usuario', 'Exportación de usuarios y productos'); guardar({tipo: 'acceso'});
+  descargar(`caja-config-${marcaArchivo()}.json`, JSON.stringify({tipo: 'cajaFiestas-config', version: 2, ts: Date.now(), exportadoPor: sesion.nombre,
+    usuarios: DB.usuarios, productos: DB.productos, ajustes: DB.ajustes}), 'application/json');
+};
+$('#btnImpConfig').onclick = () => $('#fileConfig').click();
+$('#fileConfig').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f || !esAdmin()) return;
+  try {
+    const d = JSON.parse(await f.text()); if (d.tipo !== 'cajaFiestas-config') throw new Error('No es un archivo de usuarios y productos');
+    const conProd = Array.isArray(d.productos) && d.productos.length && confirm(`El archivo trae ${d.productos.length} productos. ¿Sustituir los productos de este móvil por esos?\n(Aceptar = sí; Cancelar = solo usuarios)`);
+    let nuevos = 0, act = 0; const saltados = [];
+    for (const u of d.usuarios || []) {
+      if (!u.id || !u.hash || !u.sal || !ROLES[u.rol]) continue;
+      const mio = usuarioPorId(u.id);
+      if (mio) { if (mio.id === sesion.id && u.rol !== 'superadmin') continue; Object.assign(mio, {nombre: u.nombre, rol: u.rol, sal: u.sal, hash: u.hash, activo: u.activo}); act++; }
+      else if (u.activo && !nombreLibre(u.nombre)) saltados.push(u.nombre);
+      else { DB.usuarios.push({...u}); nuevos++; }
+    }
+    if (!superadminsActivos().length) throw new Error('Quedaría sin superadmin; no se aplica');
+    if (conProd) { DB.productos = d.productos.map(p => ({...p})); DB.productosSonEjemplo = false; carrito = []; }
+    if (d.ajustes) for (const k of ['fiesta', 'pie', 'quitarAcentos', 'autoImprimir', 'valePorConsumicion', 'bloqueoMin']) if (k in d.ajustes) DB.ajustes[k] = d.ajustes[k];
+    registrar('usuario', `Importación de ${f.name}: ${nuevos} usuarios nuevos, ${act} actualizados${conProd ? ', productos sustituidos' : ''}`);
+    guardar({tipo: 'config'}); recargarSesion(sesion); pintarTodo();
+    alert(`Hecho: ${nuevos} usuarios nuevos, ${act} actualizados${conProd ? ' y productos sustituidos' : ''}.` + (saltados.length ? `\nNo se importaron (ya hay otro usuario con ese nombre): ${saltados.join(', ')}` : ''));
+  } catch (err) { alert('No se pudo importar: ' + err.message); }
+};
+
+/* =====================================================================
+   NAVEGACIÓN Y PINTADO
+   ===================================================================== */
+function mostrarVista(v) {
+  vistaActual = v;
+  $$('.vista').forEach(s => s.classList.toggle('act', s.id === 'v-' + v));
+  $$('nav button').forEach(b => b.classList.toggle('act', b.dataset.v === v));
+}
+function irA(v) {
+  if (sesion && !PERMISOS[sesion.rol].includes(v)) return toast('Tu usuario no tiene acceso a esta pestaña');
+  mostrarVista(v); window.scrollTo(0, 0); pintarTodo();
+}
+$$('nav button').forEach(b => b.onclick = () => irA(b.dataset.v));
+function pintarTodo() {
+  $('#hdrFiesta').textContent = DB.ajustes.fiesta; document.title = 'Caja · ' + DB.ajustes.fiesta;
+  const t = DB.turnoActual;
+  $('#hdrUsuario').textContent = sesion ? `👤 ${sesion.nombre} (${ROLES[sesion.rol]}) · ${t ? (t.usuarioId === sesion.id ? 'en caja desde ' + hora(t.inicio) : 'en caja: ' + t.persona + ' desde ' + hora(t.inicio)) : 'caja cerrada'}` : '';
+  pintarLogin(); pintarImpresora();
+  if (!sesion) return;   // sin sesión no se pintan datos detrás de la pantalla de entrada
+  const perm = PERMISOS[sesion.rol];
+  $$('nav button').forEach(b => b.style.display = perm.includes(b.dataset.v) ? '' : 'none');
+  if (!perm.includes(vistaActual)) mostrarVista(perm[0]);
+  pintarCajaEstado(); pintarProductos(); pintarCarrito(); pintarUltimas(); pintarCierre(); pintarTurnos();
+  if (perm.includes('gastos')) pintarGastos();
+  if (perm.includes('informe')) pintarInforme();
+  if (perm.includes('ajustes')) pintarAjustes();
+}
+
+/* ---- Instalable como app (PWA) ----
+   Este archivo único genera su manifiesto e icono en memoria. Al publicarlo en https,
+   para que Chrome ofrezca "Instalar app" de forma fiable conviene añadir junto al HTML
+   un manifest.webmanifest y un sw.js (service worker, permite usarla sin cobertura). */
+function initPWA() {
+  const c = document.createElement('canvas'); c.width = c.height = 512; const g = c.getContext('2d');
+  g.fillStyle = '#c0392b'; g.fillRect(0, 0, 512, 512); g.font = '300px serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('🎉', 256, 280);
+  const icon = c.toDataURL('image/png');
+  const base = location.href.replace(/[#?].*$/, '');
+  const man = {name: 'Caja Fiestas', short_name: 'Caja', start_url: base, scope: base.replace(/[^/]*$/, ''), display: 'standalone', background_color: '#ffffff', theme_color: '#c0392b',
+    icons: [{src: icon, sizes: '512x512', type: 'image/png', purpose: 'any'}, {src: icon, sizes: '192x192', type: 'image/png'}]};
+  const l = document.createElement('link'); l.rel = 'manifest';
+  l.href = 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(man)); document.head.appendChild(l);
+  const a = document.createElement('link'); a.rel = 'apple-touch-icon'; a.href = icon; document.head.appendChild(a);
+  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {/* sin sw.js: funciona igual, sin modo offline */});
+}
+
+initPWA();
+pintarTodo();
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
+</script>
+</body>
+</html>
