@@ -91,9 +91,21 @@ body.sinSesion main,body.sinSesion nav{visibility:hidden}
   #ticketPrint,#ticketPrint *{visibility:visible}
   #ticketPrint{display:block;position:absolute;left:0;top:0;width:58mm;padding:2mm;font-family:monospace;font-size:11px;white-space:pre;color:#000}
 }
+
+#bannerPrueba{display:none;position:fixed;top:0;left:0;right:0;z-index:45;background:repeating-linear-gradient(-45deg,#ff9800 0 14px,#ffeb3b 14px 28px);color:#111;font-weight:900;text-align:center;padding:11px 12px;font-size:1.08rem;letter-spacing:.02em;border-bottom:3px solid #e65100;box-shadow:0 3px 10px rgba(0,0,0,.28)}
+body.conPrueba{padding-top:46px}
+body.conPrueba header{top:46px}
+body.conPrueba #login{padding-top:56px}
+
+.invBajo{background:#fadbd8;border-left:4px solid var(--rojo);padding:8px 10px;border-radius:8px;margin:6px 0}
+.invTabs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.invTabs button.act{background:var(--rojo);color:#fff;font-weight:700}
+.invStock{font-weight:900;font-size:1.15rem}
+.invStock.bajo{color:var(--rojo)}
 </style>
 </head>
 <body>
+<div id="bannerPrueba" role="status" aria-live="polite">MODO PRUEBA – las ventas no cuentan</div>
 
 <!-- ===== ACCESO: elegir usuario + PIN (y asistente del primer superadmin) ===== -->
 <div id="login">
@@ -223,6 +235,8 @@ body.sinSesion main,body.sinSesion nav{visibility:hidden}
     <button class="sec" data-csv="gastos">CSV gastos</button>
     <button class="sec" data-csv="turnos">CSV turnos</button>
     <button class="sec" data-csv="accesos">CSV accesos</button>
+    <button class="sec" data-csv="inventario">CSV inventario</button>
+    <button class="sec" data-csv="movimientos">CSV movimientos</button>
   </div>
   <p class="muted">Los CSV usan «;» y coma decimal para que Excel en español los abra bien.</p>
   <h3>Juntar datos de varios móviles</h3>
@@ -242,6 +256,12 @@ body.sinSesion main,body.sinSesion nav{visibility:hidden}
     <label style="display:flex;align-items:center;gap:10px;font-weight:500"><input type="checkbox" id="aVales" style="width:auto;transform:scale(1.5)"> Un vale por consumición (en vez de un ticket por pedido)</label>
     <label for="aBloqueo">Bloquear la pantalla tras estos minutos sin usarla</label><input id="aBloqueo" type="number" inputmode="numeric" min="1" max="60" step="1">
     <button class="ok" style="width:100%;margin-top:12px" id="btnGuardarAjustes">Guardar ajustes</button>
+  </div>
+  <div class="card" id="cardModoPrueba">
+    <h3 style="margin-top:0">Modo prueba</h3>
+    <p class="muted">Por defecto cada móvil arranca en modo prueba. Con él activo se ve la franja naranja, los tickets llevan «*** PRUEBA ***» y las exportaciones lo marcan. El día de las fiestas, el superadmin lo apaga aquí.</p>
+    <label style="display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.05rem"><input type="checkbox" id="aModoPrueba" style="width:auto;transform:scale(1.6)"> MODO PRUEBA – las ventas no cuentan</label>
+    <button class="sec" style="width:100%;margin-top:12px" id="btnAplicarModoPrueba">Aplicar cambio de modo</button>
   </div>
   <h3>Usuarios y accesos</h3>
   <div class="card">
@@ -283,6 +303,74 @@ body.sinSesion main,body.sinSesion nav{visibility:hidden}
   <button class="sec" style="width:100%;margin-top:8px;color:var(--rojo)" id="btnBorrarTodo">Borrar todos los datos de este dispositivo</button>
   <p class="muted">Prototipo: los datos se guardan solo en este dispositivo. Varios móviles no comparten ventas todavía, y el candado de «una sola persona en caja» vale solo dentro de este móvil.</p>
 </section>
+
+<section class="vista" id="v-inventario">
+  <h2>Inventario</h2>
+  <p class="muted" id="invModoNota"></p>
+  <div id="invAlertas"></div>
+  <div class="invTabs">
+    <button class="sec act" data-invtab="consumibles">Consumibles</button>
+    <button class="sec" data-invtab="material">Material/equipos</button>
+    <button class="sec" data-invtab="movimientos">Movimientos</button>
+    <button class="sec" data-invtab="historico">Histórico por año</button>
+  </div>
+  <div id="invPanel-consumibles">
+    <div id="listaConsumibles"></div>
+    <h3>Nuevo consumible</h3>
+    <div class="card" id="formNuevoCons">
+      <label>Nombre</label><input id="icNombre">
+      <label>Categoría</label><input id="icCat" placeholder="Bebidas, Comida, Vasos…">
+      <label>Unidad</label><input id="icUnidad" placeholder="botellín, unidad, caja, kg…">
+      <label>Stock actual</label><input id="icStock" type="number" inputmode="decimal" step="0.01" value="0">
+      <label>Mínimo (aviso)</label><input id="icMin" type="number" inputmode="decimal" step="0.01" value="0">
+      <label>Coste unitario (€, opcional)</label><input id="icCoste" type="number" inputmode="decimal" step="0.01" placeholder="0,00">
+      <button class="ok" style="width:100%;margin-top:10px" id="btnNuevoCons">Añadir consumible</button>
+    </div>
+    <h3>Entrada de compra</h3>
+    <div class="card">
+      <label>Artículo</label><select id="icompraItem"></select>
+      <label>Cantidad</label><input id="icompraCant" type="number" inputmode="decimal" step="0.01">
+      <label>Fecha</label><input id="icompraFecha" type="date">
+      <label>Proveedor / nota</label><input id="icompraNota" placeholder="Proveedor o nota">
+      <label>Coste total (€, opcional)</label><input id="icompraCoste" type="number" inputmode="decimal" step="0.01">
+      <button class="ok" style="width:100%;margin-top:10px" id="btnCompra">Registrar compra</button>
+    </div>
+    <h3>Recuento inicial / ajuste</h3>
+    <div class="card">
+      <label>Artículo</label><select id="iajusteItem"></select>
+      <label>Tipo</label>
+      <select id="iajusteTipo">
+        <option value="inicial">Recuento inicial (pone el stock a esta cantidad)</option>
+        <option value="ajuste">Ajuste / merma / rotura (suma o resta)</option>
+      </select>
+      <label>Cantidad</label><input id="iajusteCant" type="number" inputmode="decimal" step="0.01" placeholder="Para ajuste: usa negativo para restar">
+      <label>Motivo (obligatorio)</label><input id="iajusteNota" placeholder="Ej.: recuento almacén / rotura / merma">
+      <button class="ok" style="width:100%;margin-top:10px" id="btnAjuste">Registrar</button>
+    </div>
+  </div>
+  <div id="invPanel-material" style="display:none">
+    <div id="listaMaterial"></div>
+    <h3>Nuevo material / equipo</h3>
+    <div class="card">
+      <label>Nombre</label><input id="imNombre">
+      <label>Categoría</label><input id="imCat" placeholder="Sonido, Mesas, Iluminación…">
+      <label>Cantidad</label><input id="imStock" type="number" inputmode="decimal" step="1" value="1">
+      <label>Estado / notas</label><input id="imNotas" placeholder="Ej.: OK, en reparación…">
+      <button class="ok" style="width:100%;margin-top:10px" id="btnNuevoMat">Añadir material</button>
+    </div>
+  </div>
+  <div id="invPanel-movimientos" style="display:none">
+    <div id="listaMovimientos" style="overflow-x:auto;max-height:520px;overflow-y:auto"></div>
+  </div>
+  <div id="invPanel-historico" style="display:none">
+    <label for="invAnio">Año de las fiestas</label>
+    <select id="invAnio"></select>
+    <div id="listaHistorico" style="overflow-x:auto;margin-top:10px"></div>
+  </div>
+  <h3>Consumo por producto de caja</h3>
+  <p class="muted">Cada producto de la caja puede descontar uno o varios artículos del inventario al venderse (solo en modo real).</p>
+  <div id="listaConsumoProd"></div>
+</section>
 </main>
 
 <nav>
@@ -290,6 +378,7 @@ body.sinSesion main,body.sinSesion nav{visibility:hidden}
   <button data-v="gastos"><span>🧾</span>Gastos</button>
   <button data-v="cierre"><span>🔒</span>Cierre</button>
   <button data-v="informe"><span>📊</span>Cuentas</button>
+  <button data-v="inventario"><span>📦</span>Inventario</button>
   <button data-v="ajustes"><span>⚙️</span>Ajustes</button>
 </nav>
 
@@ -363,30 +452,47 @@ const diaBonito = k => { const [y, m, d] = k.split('-'); return d + '/' + m + '/
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 
 /* ---------- Productos y precios de las fiestas (precios en céntimos) ---------- */
-const PRODUCTOS_FIESTAS = [
-  {nombre: 'Botellín Mahou', precio: 140, emoji: '🍺'},
-  {nombre: 'Cubo 5 botellines', precio: 650, emoji: '🪣'},
-  {nombre: 'Agua', precio: 100, emoji: '💧'},
-  {nombre: 'Refrescos', precio: 200, emoji: '🥤'},
-  {nombre: 'Copas', precio: 500, emoji: '🍸'},
-  {nombre: 'Tinto de verano', precio: 200, emoji: '🍷'},
-  {nombre: 'Mojito', precio: 500, emoji: '🍹'},
-  {nombre: 'Perritos', precio: 200, emoji: '🌭'},
+/* Inventario semilla: ids fijos para mapear productos ↔ consumibles */
+const INV_SEED = [
+  {id: 'inv-mahou', tipo: 'consumible', nombre: 'Botellín Mahou', categoria: 'Bebidas', unidad: 'botellín', stock: 0, minimo: 24, costeUnitario: 0, notas: '', activo: true},
+  {id: 'inv-agua', tipo: 'consumible', nombre: 'Agua', categoria: 'Bebidas', unidad: 'unidad', stock: 0, minimo: 12, costeUnitario: 0, notas: '', activo: true},
+  {id: 'inv-refresco', tipo: 'consumible', nombre: 'Refrescos', categoria: 'Bebidas', unidad: 'unidad', stock: 0, minimo: 12, costeUnitario: 0, notas: '', activo: true},
+  {id: 'inv-copa', tipo: 'consumible', nombre: 'Copas (consumición)', categoria: 'Bebidas', unidad: 'unidad', stock: 0, minimo: 10, costeUnitario: 0, notas: '', activo: true},
+  {id: 'inv-tinto', tipo: 'consumible', nombre: 'Tinto de verano', categoria: 'Bebidas', unidad: 'unidad', stock: 0, minimo: 12, costeUnitario: 0, notas: '', activo: true},
+  {id: 'inv-mojito', tipo: 'consumible', nombre: 'Mojito', categoria: 'Bebidas', unidad: 'unidad', stock: 0, minimo: 10, costeUnitario: 0, notas: '', activo: true},
+  {id: 'inv-perrito', tipo: 'consumible', nombre: 'Perritos', categoria: 'Comida', unidad: 'unidad', stock: 0, minimo: 20, costeUnitario: 0, notas: '', activo: true},
+  {id: 'inv-vaso', tipo: 'consumible', nombre: 'Vasos', categoria: 'Consumibles', unidad: 'unidad', stock: 0, minimo: 50, costeUnitario: 0, notas: '', activo: true},
+  {id: 'inv-hielo', tipo: 'consumible', nombre: 'Hielo', categoria: 'Consumibles', unidad: 'kg', stock: 0, minimo: 10, costeUnitario: 0, notas: '', activo: true},
+  {id: 'inv-altavoz', tipo: 'material', nombre: 'Altavoz', categoria: 'Sonido', unidad: 'unidad', stock: 0, minimo: 0, costeUnitario: 0, notas: '', activo: true},
+  {id: 'inv-mesa', tipo: 'material', nombre: 'Mesa', categoria: 'Mobiliario', unidad: 'unidad', stock: 0, minimo: 0, costeUnitario: 0, notas: '', activo: true},
 ];
-const productosFiestas = () => PRODUCTOS_FIESTAS.map(p => ({...p, id: uid(), activo: true}));
+const inventarioSemilla = () => INV_SEED.map(x => ({...x}));
+const PRODUCTOS_FIESTAS = [
+  {nombre: 'Botellín Mahou', precio: 140, emoji: '🍺', consumo: [{itemId: 'inv-mahou', cant: 1}]},
+  {nombre: 'Cubo 5 botellines', precio: 650, emoji: '🪣', consumo: [{itemId: 'inv-mahou', cant: 5}]},
+  {nombre: 'Agua', precio: 100, emoji: '💧', consumo: [{itemId: 'inv-agua', cant: 1}]},
+  {nombre: 'Refrescos', precio: 200, emoji: '🥤', consumo: [{itemId: 'inv-refresco', cant: 1}]},
+  {nombre: 'Copas', precio: 500, emoji: '🍸', consumo: [{itemId: 'inv-copa', cant: 1}]},
+  {nombre: 'Tinto de verano', precio: 200, emoji: '🍷', consumo: [{itemId: 'inv-tinto', cant: 1}]},
+  {nombre: 'Mojito', precio: 500, emoji: '🍹', consumo: [{itemId: 'inv-mojito', cant: 1}]},
+  {nombre: 'Perritos', precio: 200, emoji: '🌭', consumo: [{itemId: 'inv-perrito', cant: 1}]},
+];
+const productosFiestas = () => PRODUCTOS_FIESTAS.map(p => ({...p, id: uid(), activo: true, consumo: (p.consumo || []).map(c => ({...c}))}));
 
 function estadoInicial() {
   return {
-    ajustes: {fiesta: 'Fiestas Robledillo 2027', pie: '¡Gracias y felices fiestas!', autoImprimir: true, quitarAcentos: true, bloqueoMin: 3, valePorConsumicion: false},
+    ajustes: {fiesta: 'Fiestas Robledillo 2027', pie: '¡Gracias y felices fiestas!', autoImprimir: true, quitarAcentos: true, bloqueoMin: 3, valePorConsumicion: false, modoPrueba: true},
     productos: productosFiestas(),
     productosSonEjemplo: false,  // true solo en datos antiguos que aún tienen los productos de ejemplo del prototipo
-    ventas: [],   // {id, ts, persona, turnoId, lineas:[{nombre,precio,cant}], total, entregado, cambio, anulada}
+    ventas: [],   // {id, ts, persona, turnoId, lineas:[{nombre,precio,cant}], total, entregado, cambio, anulada, invAfectado}
     gastos: [],   // {id, ts, fecha, concepto, importe, pagadoPor, deCaja, turnoId, tieneFoto}
     turnos: [],   // {id, persona, usuarioId, inicio, fondo, fin, ventas, gastosCaja, esperado, contado, diferencia, cerradoPor, cerradoPorId, forzado, motivo}
     turnoActual: null,   // turno abierto en ESTE dispositivo (candado "una sola persona en caja")
     personas: [],        // nombres antiguos (antes de los usuarios con PIN); se conservan para el histórico
     usuarios: [],        // {id, nombre, rol: superadmin|contabilidad|cajero, sal, hash (SHA-256 de sal+PIN), activo, creado}
     registro: [],        // registro de accesos: {id, ts, tipo, usuarioId, nombre, rol, turnoId, detalle}
+    inventario: inventarioSemilla(), // {id, tipo:consumible|material, nombre, categoria, unidad, stock, minimo, costeUnitario, notas, activo}
+    movimientos: [],     // {id, ts, año, tipo:inicial|compra|venta|ajuste|anulacion, itemId, cantidad, usuarioId, nombre, nota, ventaId, coste}
   };
 }
 
@@ -405,6 +511,20 @@ function cargar() {
       if (d.productosSonEjemplo && !d.ventas.length) { d.productos = productosFiestas(); d.productosSonEjemplo = false; cambiado = true; }
       // Cabecera antigua por defecto -> la de este año
       if (d.ajustes.fiesta === 'Fiestas del pueblo 2026') { d.ajustes.fiesta = 'Fiestas Robledillo 2027'; cambiado = true; }
+      if (d.ajustes.modoPrueba === undefined) { d.ajustes.modoPrueba = true; cambiado = true; }
+      if (!Array.isArray(d.inventario) || !d.inventario.length) { d.inventario = inventarioSemilla(); cambiado = true; }
+      else {
+        for (const s of INV_SEED) if (!d.inventario.some(i => i.id === s.id)) { d.inventario.push({...s}); cambiado = true; }
+      }
+      if (!Array.isArray(d.movimientos)) { d.movimientos = []; cambiado = true; }
+      // Asegurar mapeo de consumo en productos conocidos sin consumo
+      for (const p of d.productos || []) {
+        if (!Array.isArray(p.consumo)) {
+          const ref = PRODUCTOS_FIESTAS.find(x => x.nombre === p.nombre);
+          if (ref) { p.consumo = ref.consumo.map(c => ({...c})); cambiado = true; }
+          else p.consumo = [];
+        }
+      }
       if (cambiado) localStorage.setItem(LS_KEY, JSON.stringify(d));
       return d;
     }
@@ -471,6 +591,16 @@ function comprimirFoto(file, max = 1200) {
 
 function toast(msg, ms = 2200) { const t = $('#toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(t._h); t._h = setTimeout(() => t.style.display = 'none', ms); }
 
+
+/* ---- Modo prueba (por defecto ON en cada dispositivo) ---- */
+const enPrueba = () => DB.ajustes.modoPrueba !== false;
+function pintarBanner() {
+  const on = enPrueba();
+  const b = $('#bannerPrueba');
+  if (b) b.style.display = on ? 'block' : 'none';
+  document.body.classList.toggle('conPrueba', on);
+}
+
 /* =====================================================================
    USUARIOS, PIN Y SESIÓN
    - Cada usuario tiene nombre, rol y PIN de 4 cifras. El PIN NUNCA se guarda:
@@ -481,8 +611,8 @@ function toast(msg, ms = 2200) { const t = $('#toast'); t.textContent = msg; t.s
    ===================================================================== */
 const ROLES = {superadmin: 'Superadmin', contabilidad: 'Contabilidad', cajero: 'Cajero/a'};
 const PERMISOS = {                       // pestañas que ve cada rol
-  superadmin: ['caja', 'gastos', 'cierre', 'informe', 'ajustes'],
-  contabilidad: ['gastos', 'cierre', 'informe'],
+  superadmin: ['caja', 'gastos', 'cierre', 'informe', 'inventario', 'ajustes'],
+  contabilidad: ['gastos', 'cierre', 'informe', 'inventario'],
   cajero: ['caja', 'cierre'],
 };
 const puedeVenderRol = r => r === 'cajero' || r === 'superadmin';
@@ -778,7 +908,10 @@ $('#mConfirmar').onclick = async () => {
   if (entregado < total) return;
   if (!puedeVender()) { $('#modalCobro').classList.remove('act'); return toast('No tienes el turno de caja abierto'); }
   const v = {id: uid(), ts: Date.now(), persona: persona(), usuarioId: sesion.id, turnoId: DB.turnoActual.id,
-    lineas: carrito.map(l => ({nombre: l.nombre, precio: l.precio, cant: l.cant})), total, entregado, cambio: entregado - total};
+    lineas: carrito.map(l => ({nombre: l.nombre, precio: l.precio, cant: l.cant, productoId: l.id})), total, entregado, cambio: entregado - total,
+    invAfectado: false};
+  // MODO PRUEBA: las ventas NO descuentan stock real (lo más seguro). Solo en modo real.
+  if (!enPrueba()) { aplicarConsumoVenta(v, -1, 'venta'); v.invAfectado = true; }
   DB.ventas.push(v); guardar({tipo: 'venta', datos: v}); ultimaVenta = v;
   carrito = []; $('#modalCobro').classList.remove('act');
   $('#hCambio').textContent = 'Cambio: ' + eur(v.cambio);
@@ -802,7 +935,9 @@ $('#btnAnular').onclick = () => {
   const v = ventasValidas().filter(v => DB.turnoActual && v.turnoId === DB.turnoActual.id).pop();
   if (!v) return toast('No hay ventas en este turno');
   if (!confirm(`¿Anular la venta de ${eur(v.total)} de las ${fechaHora(v.ts).slice(11)}?`)) return;
-  v.anulada = true; v.anuladaPor = persona(); guardar({tipo: 'anular', id: v.id}); pintarTodo(); toast('Venta anulada');
+  v.anulada = true; v.anuladaPor = persona();
+  if (v.invAfectado) { aplicarConsumoVenta(v, +1, 'anulacion'); v.invAfectado = false; }
+  guardar({tipo: 'anular', id: v.id}); pintarTodo(); toast('Venta anulada');
 };
 function pintarUltimas() {
   const vs = DB.turnoActual ? DB.ventas.filter(v => v.turnoId === DB.turnoActual.id).slice(-10).reverse() : [];
@@ -832,6 +967,7 @@ function textoTicket(v) {
   L.push(linea);
   return {
     cabecera: DB.ajustes.fiesta,
+    marcaPrueba: enPrueba() ? '*** PRUEBA ***' : '',
     fecha: fechaHora(v.ts),
     cuerpo: L,
     total: dosCol('TOTAL EUR', m(v.total)),
@@ -843,7 +979,7 @@ function textoTicket(v) {
 }
 function imprimirNavegador(v) {
   const t = textoTicket(v), c = s => s.length > ANCHO ? s : ' '.repeat(Math.floor((ANCHO - s.length) / 2)) + s;
-  $('#ticketPrint').textContent = [c(t.cabecera), c(t.fecha), ...t.cuerpo, t.total, '', ...t.pagos, '', t.cajero, t.ref, '', c(t.pie), ''].join('\n');
+  $('#ticketPrint').textContent = [c(t.cabecera), ...(t.marcaPrueba ? [c(t.marcaPrueba)] : []), c(t.fecha), ...t.cuerpo, t.total, '', ...t.pagos, '', t.cajero, t.ref, '', c(t.pie), ''].join('\n');
   window.print();
 }
 
@@ -907,6 +1043,7 @@ function escposTicket(v) {
   if (!DB.ajustes.quitarAcentos) b.push(ESC, 0x74, 0x02); // página de códigos PC850
   b.push(ESC, 0x61, 0x01);                              // centrado
   b.push(ESC, 0x21, 0x30); partir(t.cabecera, 16).forEach(txt); // doble alto/ancho (16 caracteres por línea)
+  if (t.marcaPrueba) { b.push(ESC, 0x21, 0x30); txt(t.marcaPrueba); }
   b.push(ESC, 0x21, 0x00); txt(t.fecha);
   b.push(ESC, 0x61, 0x00);                              // izquierda
   t.cuerpo.forEach(txt);
@@ -936,6 +1073,7 @@ function escposVales(v) {
   if (!DB.ajustes.quitarAcentos) b.push(ESC, 0x74, 0x02);
   for (const x of listaVales(v)) {
     b.push(ESC, 0x61, 0x01, ESC, 0x21, 0x00); txt(DB.ajustes.fiesta);
+    if (enPrueba()) { b.push(ESC, 0x21, 0x30); txt('*** PRUEBA ***'); b.push(ESC, 0x21, 0x00); }
     txt('-'.repeat(ANCHO));
     b.push(ESC, 0x21, 0x30); partir(x.nombre, 16).forEach(txt);        // producto en grande
     b.push(ESC, 0x21, 0x10); txt(m(x.precio) + ' EUR');                // precio en doble alto
@@ -948,7 +1086,7 @@ function escposVales(v) {
 }
 function textoVales(v) {
   const c = s => s.length >= ANCHO ? s : ' '.repeat(Math.floor((ANCHO - s.length) / 2)) + s, m = p => (p / 100).toFixed(2).replace('.', ',');
-  return listaVales(v).map(x => [c(DB.ajustes.fiesta), '-'.repeat(ANCHO), c(x.nombre.toUpperCase()), c(m(x.precio) + ' €'), c(fechaHora(v.ts)), c('Ticket ' + v.id.slice(-6).toUpperCase() + ' · vale ' + x.n + '/' + x.de), '', '-'.repeat(12) + ' cortar ' + '-'.repeat(12), ''].join('\n')).join('\n');
+  return listaVales(v).map(x => [c(DB.ajustes.fiesta), ...(enPrueba() ? [c('*** PRUEBA ***')] : []), '-'.repeat(ANCHO), c(x.nombre.toUpperCase()), c(m(x.precio) + ' €'), c(fechaHora(v.ts)), c('Ticket ' + v.id.slice(-6).toUpperCase() + ' · vale ' + x.n + '/' + x.de), '', '-'.repeat(12) + ' cortar ' + '-'.repeat(12), ''].join('\n')).join('\n');
 }
 async function imprimirValesBT(v) {
   try {
@@ -1116,21 +1254,26 @@ function pintarInforme() {
 const entradasSalidas = () => [...DB.turnos, ...(DB.turnoActual ? [DB.turnoActual] : [])].sort((a, b) => b.inicio - a.inicio);
 function hojas() {
   const r = calcularInforme();
+  const modo = enPrueba() ? 'PRUEBA' : 'REAL';
   return {
-    resumen: [['Día', 'Nº ventas', 'Ingresos', 'Gastos', 'Beneficio'], ...r.dias.map(d => [diaBonito(d.dia), d.nVentas, num(d.ingresos), num(d.gastos), num(d.ingresos - d.gastos)]),
+    resumen: [['Modo', modo], [], ['Día', 'Nº ventas', 'Ingresos', 'Gastos', 'Beneficio'], ...r.dias.map(d => [diaBonito(d.dia), d.nVentas, num(d.ingresos), num(d.gastos), num(d.ingresos - d.gastos)]),
       ['TOTAL', r.dias.reduce((s, d) => s + d.nVentas, 0), num(r.ingresos), num(r.gastos), num(r.beneficio)], [],
       ['Persona', 'Nº ventas', 'Cobrado', 'Gastos pagados', 'Diferencia de caja'], ...r.personas.map(p => [p.persona, p.nVentas, num(p.ingresos), num(p.gastos), num(p.difCaja)])],
-    ventas: [['Id', 'Fecha y hora', 'Día', 'Cobró', 'Total', 'Entregado', 'Cambio', 'Anulada', 'Detalle'],
-      ...DB.ventas.map(v => [v.id, fechaHora(v.ts), diaBonito(diaKey(v.ts)), v.persona, num(v.total), num(v.entregado), num(v.cambio), v.anulada ? 'Sí' : 'No', v.lineas.map(l => l.cant + 'x ' + l.nombre).join(', ')])],
-    lineas: [['Id venta', 'Fecha y hora', 'Cobró', 'Producto', 'Cantidad', 'Precio', 'Importe'],
-      ...ventasValidas().flatMap(v => v.lineas.map(l => [v.id, fechaHora(v.ts), v.persona, l.nombre, l.cant, num(l.precio), num(l.cant * l.precio)]))],
-    gastos: [['Id', 'Fecha', 'Concepto', 'Importe', 'Pagó', 'De la caja', 'Foto'],
-      ...DB.gastos.map(g => [g.id, diaBonito(g.fecha), g.concepto, num(g.importe), g.pagadoPor, g.deCaja ? 'Sí' : 'No', g.tieneFoto ? 'Sí' : 'No'])],
-    turnos: [['Persona', 'Hora de entrada', 'Hora de salida', 'Efectivo inicial', 'Nº ventas', 'Ventas', 'Gastos de caja', 'Esperado', 'Contado', 'Diferencia', 'Cerrado por', 'Cierre forzado', 'Motivo', 'Móvil de origen'],
-      ...DB.turnos.map(t => [t.persona, fechaHora(t.inicio), fechaHora(t.fin), num(t.fondo), t.nVentas, num(t.ventas), num(t.gastosCaja), num(t.esperado), num(t.contado), num(t.diferencia), t.cerradoPor || t.persona, t.forzado ? 'Sí' : 'No', t.motivo || '', t.origen || 'este']),
-      ...(DB.turnoActual ? [[DB.turnoActual.persona, fechaHora(DB.turnoActual.inicio), '(en caja)', num(DB.turnoActual.fondo), '', '', '', '', '', '', '', '', '', 'este']] : [])],
-    accesos: [['Fecha y hora', 'Evento', 'Usuario', 'Rol', 'Detalle', 'Id turno', 'Id'],
-      ...DB.registro.map(e => [fechaHora(e.ts), (TIPOS[e.tipo] || e.tipo).replace(/^[^A-Za-zÁÉÍÓÚÑáéíóúñ]+/, ''), e.nombre, ROLES[e.rol] || e.rol, e.detalle, e.turnoId || '', e.id])],
+    ventas: [['Id', 'Fecha y hora', 'Día', 'Cobró', 'Total', 'Entregado', 'Cambio', 'Anulada', 'Detalle', 'Modo'],
+      ...DB.ventas.map(v => [v.id, fechaHora(v.ts), diaBonito(diaKey(v.ts)), v.persona, num(v.total), num(v.entregado), num(v.cambio), v.anulada ? 'Sí' : 'No', v.lineas.map(l => l.cant + 'x ' + l.nombre).join(', '), modo])],
+    lineas: [['Id venta', 'Fecha y hora', 'Cobró', 'Producto', 'Cantidad', 'Precio', 'Importe', 'Modo'],
+      ...ventasValidas().flatMap(v => v.lineas.map(l => [v.id, fechaHora(v.ts), v.persona, l.nombre, l.cant, num(l.precio), num(l.cant * l.precio), modo]))],
+    gastos: [['Id', 'Fecha', 'Concepto', 'Importe', 'Pagó', 'De la caja', 'Foto', 'Modo'],
+      ...DB.gastos.map(g => [g.id, diaBonito(g.fecha), g.concepto, num(g.importe), g.pagadoPor, g.deCaja ? 'Sí' : 'No', g.tieneFoto ? 'Sí' : 'No', modo])],
+    turnos: [['Persona', 'Hora de entrada', 'Hora de salida', 'Efectivo inicial', 'Nº ventas', 'Ventas', 'Gastos de caja', 'Esperado', 'Contado', 'Diferencia', 'Cerrado por', 'Cierre forzado', 'Motivo', 'Móvil de origen', 'Modo'],
+      ...DB.turnos.map(t => [t.persona, fechaHora(t.inicio), fechaHora(t.fin), num(t.fondo), t.nVentas, num(t.ventas), num(t.gastosCaja), num(t.esperado), num(t.contado), num(t.diferencia), t.cerradoPor || t.persona, t.forzado ? 'Sí' : 'No', t.motivo || '', t.origen || 'este', modo]),
+      ...(DB.turnoActual ? [[DB.turnoActual.persona, fechaHora(DB.turnoActual.inicio), '(en caja)', num(DB.turnoActual.fondo), '', '', '', '', '', '', '', '', '', 'este', modo]] : [])],
+    accesos: [['Fecha y hora', 'Evento', 'Usuario', 'Rol', 'Detalle', 'Id turno', 'Id', 'Modo'],
+      ...DB.registro.map(e => [fechaHora(e.ts), (TIPOS[e.tipo] || e.tipo).replace(/^[^A-Za-zÁÉÍÓÚÑáéíóúñ]+/, ''), e.nombre, ROLES[e.rol] || e.rol, e.detalle, e.turnoId || '', e.id, modo])],
+    inventario: [['Id', 'Tipo', 'Nombre', 'Categoría', 'Unidad', 'Stock', 'Mínimo', 'Coste unitario', 'Notas', 'Activo', 'Modo'],
+      ...(DB.inventario || []).map(i => [i.id, i.tipo, i.nombre, i.categoria, i.unidad, i.stock, i.minimo, i.costeUnitario ? num(i.costeUnitario) : '', i.notas || '', i.activo === false ? 'No' : 'Sí', modo])],
+    movimientos: [['Id', 'Fecha y hora', 'Año', 'Tipo', 'Artículo', 'Id artículo', 'Cantidad', 'Usuario', 'Nota', 'Id venta', 'Coste', 'Modo'],
+      ...(DB.movimientos || []).map(m => { const it = (DB.inventario || []).find(i => i.id === m.itemId); return [m.id, fechaHora(m.ts), m.año, TIPOS_MOV[m.tipo] || m.tipo, it ? it.nombre : '', m.itemId, m.cantidad, m.nombre, m.nota || '', m.ventaId || '', m.coste ? num(m.coste) : '', modo]; })],
   };
 }
 function descargar(nombre, contenido, tipo) {
@@ -1146,7 +1289,7 @@ $('#btnExcel').onclick = () => {
   if (!puedeExportar()) return;
   const x = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
   const celda = c => { const s = String(c ?? ''); const n = /^-?\d+(,\d+)?$/.test(s) ? s.replace(',', '.') : null; return n !== null ? `<Cell><Data ss:Type="Number">${n}</Data></Cell>` : `<Cell><Data ss:Type="String">${x(s)}</Data></Cell>`; };
-  const H = hojas(), nombres = {resumen: 'Resumen', ventas: 'Ventas', lineas: 'Lineas', gastos: 'Gastos', turnos: 'Turnos', accesos: 'Accesos'};
+  const H = hojas(), nombres = {resumen: 'Resumen', ventas: 'Ventas', lineas: 'Lineas', gastos: 'Gastos', turnos: 'Turnos', accesos: 'Accesos', inventario: 'Inventario', movimientos: 'Movimientos'};
   const xml = '<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">' +
     Object.keys(H).map(k => `<Worksheet ss:Name="${nombres[k]}"><Table>${H[k].map(f => '<Row>' + f.map(celda).join('') + '</Row>').join('')}</Table></Worksheet>`).join('') + '</Workbook>';
   descargar(`caja-fiestas-${sufijo()}.xls`, xml, 'application/vnd.ms-excel');
@@ -1157,7 +1300,7 @@ $('#btnExcel').onclick = () => {
    ===================================================================== */
 function pintarAjustes() {
   $('#aFiesta').value = DB.ajustes.fiesta; $('#aPie').value = DB.ajustes.pie;
-  $('#aAuto').checked = DB.ajustes.autoImprimir; $('#aAcentos').checked = DB.ajustes.quitarAcentos; $('#aVales').checked = !!DB.ajustes.valePorConsumicion;
+  $('#aAuto').checked = DB.ajustes.autoImprimir; $('#aAcentos').checked = DB.ajustes.quitarAcentos; $('#aVales').checked = !!DB.ajustes.valePorConsumicion; if ($('#aModoPrueba')) $('#aModoPrueba').checked = enPrueba();
   if (document.activeElement !== $('#aBloqueo')) $('#aBloqueo').value = DB.ajustes.bloqueoMin || 3;
   pintarUsuarios();
   $('#avisoEjemplo2').innerHTML = DB.productosSonEjemplo ? '<p class="muted">Este móvil aún tiene la lista de productos del prototipo (ya hay ventas y no se ha tocado). Pulsa «Cargar productos de las fiestas» para cambiarla.</p>' : '';
@@ -1234,6 +1377,34 @@ $('#btnCargarProductos').onclick = () => {
   registrar('datos', 'Carga de los productos de las fiestas'); guardar({tipo: 'productos'}); pintarTodo(); toast('Productos de las fiestas cargados');
 };
 $('#btnNuevoProducto').onclick = () => { DB.productos.push({id: uid(), nombre: 'Nuevo producto', precio: 100, emoji: '🎉', activo: true}); DB.productosSonEjemplo = false; guardar({tipo: 'producto'}); pintarTodo(); };
+
+$('#btnAplicarModoPrueba').onclick = async () => {
+  if (!esAdmin()) return toast('Solo el superadmin puede cambiar el modo');
+  const quierePrueba = $('#aModoPrueba').checked;
+  if (quierePrueba === enPrueba()) { toast(quierePrueba ? 'Ya está en modo prueba' : 'Ya está en modo real'); return; }
+  if (quierePrueba) {
+    if (!confirm('¿Volver a MODO PRUEBA?\nSe verá la franja naranja y los tickets marcarán «*** PRUEBA ***».')) { $('#aModoPrueba').checked = enPrueba(); return; }
+    DB.ajustes.modoPrueba = true;
+    registrar('datos', 'Activado modo prueba'); guardar({tipo: 'ajustes'}); pintarTodo(); toast('Modo prueba activado');
+    return;
+  }
+  if (!confirm('¿Pasar a modo real?\nLa franja de MODO PRUEBA desaparecerá y los tickets ya no marcarán PRUEBA.')) { $('#aModoPrueba').checked = true; return; }
+  // Ofrecer (sin forzar) borrar ventas/turnos de prueba, con opción de exportar CSV antes
+  if (confirm('Recomendado: ¿borrar las ventas y turnos de prueba de este móvil?\n\nAceptar = sí, borrarlas (después te pregunto si exportas un CSV antes).\nCancelar = conservarlas y solo quitar el modo prueba.')) {
+    if (confirm('¿Exportar antes un CSV de ventas (recomendado)?\nAceptar = descargar CSV y luego borrar.\nCancelar = borrar sin exportar.')) {
+      descargar(`caja-ventas-prueba-${sufijo()}.csv`, aCSV(hojas().ventas), 'text/csv;charset=utf-8');
+      await new Promise(r => setTimeout(r, 400));
+    }
+    if (DB.turnoActual) { registrar('salida', 'Cierre al pasar a modo real (turno de prueba)', {turnoId: DB.turnoActual.id}); DB.turnoActual = null; }
+    const nV = DB.ventas.length, nT = DB.turnos.length;
+    DB.ventas = []; DB.turnos = []; carrito = []; ultimaVenta = null;
+    registrar('datos', `Paso a modo real: borradas ${nV} ventas y ${nT} turnos de prueba`);
+  } else {
+    registrar('datos', 'Paso a modo real (se conservan ventas y turnos de prueba)');
+  }
+  DB.ajustes.modoPrueba = false;
+  guardar({tipo: 'ajustes'}); pintarTodo(); toast('Modo real activado');
+};
 $('#btnGuardarAjustes').onclick = () => {
   if (!esAdmin()) return;
   Object.assign(DB.ajustes, {fiesta: $('#aFiesta').value.trim() || 'Fiestas', pie: $('#aPie').value.trim(), autoImprimir: $('#aAuto').checked, quitarAcentos: $('#aAcentos').checked,
@@ -1292,15 +1463,17 @@ async function exportarDatosMovil() {
   const quien = sesion.nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9]+/g, '-');
   registrar('datos', 'Descarga de datos de este móvil para Contabilidad'); guardar({tipo: 'acceso'});
   descargar(`caja-datos-${quien}-${marcaArchivo()}.json`, JSON.stringify({tipo: 'cajaFiestas-datos', version: 2, dispositivo: ID_DISPOSITIVO, exportadoPor: sesion.nombre, ts: Date.now(),
-    ventas: DB.ventas, turnos: DB.turnos, gastos: DB.gastos, registro: DB.registro, personas: DB.personas, fotos}), 'application/json');
+    ventas: DB.ventas, turnos: DB.turnos, gastos: DB.gastos, registro: DB.registro, personas: DB.personas, inventario: DB.inventario, movimientos: DB.movimientos, fotos}), 'application/json');
 }
 // Fusiona sin duplicar: añade lo que no existe (por id) y actualiza ventas anuladas.
 async function fusionarDatos(d, nombreArchivo) {
   const src = d.tipo === 'cajaFiestas-datos' ? d : d.DB;   // también vale una copia de seguridad completa
   if (!src || !Array.isArray(src.ventas)) throw new Error('El archivo no tiene datos de la caja');
-  const r = {ventas: 0, turnos: 0, gastos: 0, registro: 0, anuladas: 0};
+  const r = {ventas: 0, turnos: 0, gastos: 0, registro: 0, anuladas: 0, inventario: 0, movimientos: 0};
+  if (!Array.isArray(DB.inventario)) DB.inventario = [];
+  if (!Array.isArray(DB.movimientos)) DB.movimientos = [];
   const fus = (k, extra) => { const ids = new Set(DB[k].map(x => x.id)); for (const x of src[k] || []) { if (!x || !x.id) continue; if (!ids.has(x.id)) { DB[k].push(extra ? {...x, ...extra} : x); ids.add(x.id); r[k]++; } } };
-  fus('ventas'); fus('turnos', d.dispositivo && d.dispositivo !== ID_DISPOSITIVO ? {origen: d.dispositivo} : null); fus('gastos'); fus('registro');
+  fus('ventas'); fus('turnos', d.dispositivo && d.dispositivo !== ID_DISPOSITIVO ? {origen: d.dispositivo} : null); fus('gastos'); fus('registro'); fus('inventario'); fus('movimientos');
   for (const v of src.ventas) { const mia = DB.ventas.find(x => x.id === v.id); if (mia && v.anulada && !mia.anulada) { mia.anulada = true; mia.anuladaPor = v.anuladaPor; r.anuladas++; } }
   for (const p of src.personas || []) if (!DB.personas.includes(p)) DB.personas.push(p);
   const fotos = d.fotos || {}; for (const [id, u] of Object.entries(fotos)) if (u && DB.gastos.some(g => g.id === id)) await FotoDB.poner(id, u);
@@ -1325,7 +1498,7 @@ $('#btnExpConfig').onclick = () => {
   if (!esAdmin()) return;
   registrar('usuario', 'Exportación de usuarios y productos'); guardar({tipo: 'acceso'});
   descargar(`caja-config-${marcaArchivo()}.json`, JSON.stringify({tipo: 'cajaFiestas-config', version: 2, ts: Date.now(), exportadoPor: sesion.nombre,
-    usuarios: DB.usuarios, productos: DB.productos, ajustes: DB.ajustes}), 'application/json');
+    usuarios: DB.usuarios, productos: DB.productos, ajustes: DB.ajustes, inventario: DB.inventario}), 'application/json');
 };
 $('#btnImpConfig').onclick = () => $('#fileConfig').click();
 $('#fileConfig').onchange = async e => {
@@ -1343,12 +1516,211 @@ $('#fileConfig').onchange = async e => {
     }
     if (!superadminsActivos().length) throw new Error('Quedaría sin superadmin; no se aplica');
     if (conProd) { DB.productos = d.productos.map(p => ({...p})); DB.productosSonEjemplo = false; carrito = []; }
-    if (d.ajustes) for (const k of ['fiesta', 'pie', 'quitarAcentos', 'autoImprimir', 'valePorConsumicion', 'bloqueoMin']) if (k in d.ajustes) DB.ajustes[k] = d.ajustes[k];
+    if (d.ajustes) for (const k of ['fiesta', 'pie', 'quitarAcentos', 'autoImprimir', 'valePorConsumicion', 'bloqueoMin', 'modoPrueba']) if (k in d.ajustes) DB.ajustes[k] = d.ajustes[k];
+    if (Array.isArray(d.inventario) && d.inventario.length) {
+      const ids = new Set(DB.inventario.map(i => i.id));
+      for (const it of d.inventario) {
+        if (!it || !it.id) continue;
+        const mio = DB.inventario.find(x => x.id === it.id);
+        if (mio) Object.assign(mio, it); else { DB.inventario.push({...it}); ids.add(it.id); }
+      }
+    }
     registrar('usuario', `Importación de ${f.name}: ${nuevos} usuarios nuevos, ${act} actualizados${conProd ? ', productos sustituidos' : ''}`);
     guardar({tipo: 'config'}); recargarSesion(sesion); pintarTodo();
     alert(`Hecho: ${nuevos} usuarios nuevos, ${act} actualizados${conProd ? ' y productos sustituidos' : ''}.` + (saltados.length ? `\nNo se importaron (ya hay otro usuario con ese nombre): ${saltados.join(', ')}` : ''));
   } catch (err) { alert('No se pudo importar: ' + err.message); }
 };
+
+
+/* =====================================================================
+   INVENTARIO
+   - Consumibles: se descuentan al vender (solo MODO REAL). Material no.
+   - En MODO PRUEBA las ventas NO tocan el stock (documentado en CAMBIOS.md).
+   - mapeo producto.consumo = [{itemId, cant}] (p. ej. Cubo → 5× Botellín Mahou)
+   ===================================================================== */
+const TIPOS_MOV = {inicial: 'Recuento inicial', compra: 'Compra', venta: 'Venta', ajuste: 'Ajuste', anulacion: 'Anulación venta'};
+const añoDe = ts => new Date(ts).getFullYear();
+const itemPorId = id => (DB.inventario || []).find(i => i.id === id);
+const consumibles = () => (DB.inventario || []).filter(i => i.tipo === 'consumible' && i.activo !== false);
+const materiales = () => (DB.inventario || []).filter(i => i.tipo === 'material' && i.activo !== false);
+function registrarMovimiento({tipo, itemId, cantidad, nota, ventaId, coste, ts}) {
+  const it = itemPorId(itemId); if (!it) return null;
+  const m = {id: uid(), ts: ts || Date.now(), año: añoDe(ts || Date.now()), tipo, itemId, cantidad, usuarioId: sesion ? sesion.id : null,
+    nombre: sesion ? sesion.nombre : '', nota: nota || '', ventaId: ventaId || null, coste: coste || 0};
+  DB.movimientos.push(m); return m;
+}
+function aplicarConsumoVenta(v, signo, tipoMov) {
+  // signo -1 = venta (resta), +1 = anulación (suma)
+  for (const l of v.lineas || []) {
+    const prod = (DB.productos || []).find(p => p.id === l.productoId) || (DB.productos || []).find(p => p.nombre === l.nombre);
+    const mapa = (prod && prod.consumo) || [];
+    for (const c of mapa) {
+      const it = itemPorId(c.itemId); if (!it || it.tipo !== 'consumible') continue;
+      const q = (Number(c.cant) || 0) * (Number(l.cant) || 0) * signo;
+      if (!q) continue;
+      it.stock = Math.round((Number(it.stock) + q) * 1000) / 1000;
+      registrarMovimiento({tipo: tipoMov, itemId: it.id, cantidad: q, nota: (tipoMov === 'venta' ? 'Ticket ' : 'Anulación ') + (v.id || '').slice(-6).toUpperCase(), ventaId: v.id});
+    }
+  }
+}
+function stockBajo() { return consumibles().filter(i => Number(i.minimo) > 0 && Number(i.stock) < Number(i.minimo)); }
+
+let invTab = 'consumibles';
+$$('[data-invtab]').forEach(b => b.onclick = () => {
+  invTab = b.dataset.invtab;
+  $$('[data-invtab]').forEach(x => x.classList.toggle('act', x.dataset.invtab === invTab));
+  ['consumibles','material','movimientos','historico'].forEach(t => {
+    const el = $('#invPanel-' + t); if (el) el.style.display = t === invTab ? '' : 'none';
+  });
+  pintarInventario();
+});
+
+function optsItems(sel, lista) {
+  const cur = sel.value;
+  sel.innerHTML = lista.map(i => `<option value="${i.id}">${esc(i.nombre)} (${esc(i.unidad)}) · stock ${i.stock}</option>`).join('') || '<option value="">—</option>';
+  if (cur && [...sel.options].some(o => o.value === cur)) sel.value = cur;
+}
+function pintarInventario() {
+  if (!sesion || !PERMISOS[sesion.rol].includes('inventario')) return;
+  $('#invModoNota').textContent = enPrueba()
+    ? 'MODO PRUEBA activo: las ventas de caja NO descuentan stock. El inventario solo cambia con compras, recuentos y ajustes.'
+    : 'Modo real: cada venta descuenta el consumo configurado de cada producto.';
+  const bajos = stockBajo();
+  $('#invAlertas').innerHTML = bajos.length
+    ? bajos.map(i => `<div class="invBajo">⚠️ Stock bajo: <b>${esc(i.nombre)}</b> — quedan ${i.stock} ${esc(i.unidad)} (mínimo ${i.minimo})</div>`).join('')
+    : '<p class="muted">Sin avisos de stock mínimo.</p>';
+
+  $('#listaConsumibles').innerHTML = consumibles().length ? `<table><thead><tr><th>Artículo</th><th>Cat.</th><th class="n">Stock</th><th class="n">Mín.</th><th class="n">Coste</th></tr></thead><tbody>` +
+    consumibles().map(i => `<tr><td><b>${esc(i.nombre)}</b><br><span class="muted">${esc(i.unidad)}</span></td><td>${esc(i.categoria)}</td><td class="n"><span class="invStock ${Number(i.stock) < Number(i.minimo) && Number(i.minimo) > 0 ? 'bajo' : ''}">${i.stock}</span></td><td class="n">${i.minimo}</td><td class="n">${i.costeUnitario ? eur(i.costeUnitario) : '—'}</td></tr>`).join('') + '</tbody></table>'
+    : '<p class="muted">No hay consumibles.</p>';
+
+  $('#listaMaterial').innerHTML = materiales().length ? `<table><thead><tr><th>Equipo</th><th>Cat.</th><th class="n">Cant.</th><th>Estado / notas</th></tr></thead><tbody>` +
+    materiales().map(i => `<tr data-mid="${i.id}"><td><b>${esc(i.nombre)}</b></td><td>${esc(i.categoria)}</td><td class="n">${i.stock}</td><td><input data-notas value="${esc(i.notas || '')}" style="padding:6px"></td></tr>`).join('') + '</tbody></table>'
+    : '<p class="muted">No hay material.</p>';
+  $$('#listaMaterial [data-notas]').forEach(inp => inp.onchange = () => {
+    const it = itemPorId(inp.closest('[data-mid]').dataset.mid); if (!it) return;
+    it.notas = inp.value.trim(); guardar({tipo: 'inventario'}); toast('Notas guardadas');
+  });
+
+  const movs = [...(DB.movimientos || [])].sort((a, b) => b.ts - a.ts).slice(0, 200);
+  $('#listaMovimientos').innerHTML = movs.length ? `<table><thead><tr><th>Fecha</th><th>Tipo</th><th>Artículo</th><th class="n">Cant.</th><th>Quién</th><th>Nota</th></tr></thead><tbody>` +
+    movs.map(m => { const it = itemPorId(m.itemId); return `<tr><td>${fechaHora(m.ts)}</td><td>${TIPOS_MOV[m.tipo] || m.tipo}</td><td>${esc(it ? it.nombre : m.itemId)}</td><td class="n">${m.cantidad}</td><td>${esc(m.nombre)}</td><td>${esc(m.nota)}</td></tr>`; }).join('') + '</tbody></table>'
+    : '<p class="muted">Sin movimientos todavía.</p>';
+
+  const años = [...new Set((DB.movimientos || []).map(m => m.año))].sort((a, b) => b - a);
+  const yNow = new Date().getFullYear();
+  if (!años.includes(yNow)) años.unshift(yNow);
+  const selY = $('#invAnio'); const yCur = selY.value || String(yNow);
+  selY.innerHTML = años.map(y => `<option value="${y}">${y}</option>`).join('');
+  if ([...selY.options].some(o => o.value === yCur)) selY.value = yCur;
+  const y = parseInt(selY.value, 10);
+  const porItem = {};
+  for (const m of DB.movimientos || []) {
+    if (m.año !== y) continue;
+    const it = itemPorId(m.itemId); if (!it || it.tipo !== 'consumible') continue;
+    if (!porItem[m.itemId]) porItem[m.itemId] = {nombre: it.nombre, unidad: it.unidad, venta: 0, compra: 0, ajuste: 0, inicial: 0, anulacion: 0};
+    if (m.tipo === 'venta') porItem[m.itemId].venta += -m.cantidad;
+    else if (m.tipo === 'anulacion') porItem[m.itemId].anulacion += m.cantidad;
+    else if (m.tipo === 'compra') porItem[m.itemId].compra += m.cantidad;
+    else if (m.tipo === 'inicial') porItem[m.itemId].inicial += m.cantidad;
+    else porItem[m.itemId].ajuste += m.cantidad;
+  }
+  for (const id of Object.keys(porItem)) {
+    const r = porItem[id];
+    r.venta = Math.round(r.venta * 1000) / 1000;
+    r.compra = Math.round(r.compra * 1000) / 1000;
+    r.ajuste = Math.round(r.ajuste * 1000) / 1000;
+    r.anulacion = Math.round(r.anulacion * 1000) / 1000;
+  }
+  const rows = Object.values(porItem);
+  $('#listaHistorico').innerHTML = rows.length ? `<table><thead><tr><th>Consumible</th><th class="n">Vendido</th><th class="n">Compras</th><th class="n">Ajustes</th><th class="n">Anulaciones</th></tr></thead><tbody>` +
+    rows.map(r => `<tr><td>${esc(r.nombre)} <span class="muted">${esc(r.unidad)}</span></td><td class="n">${r.venta}</td><td class="n">${r.compra}</td><td class="n">${r.ajuste}</td><td class="n">${r.anulacion}</td></tr>`).join('') + '</tbody></table>'
+    : '<p class="muted">Sin movimientos de consumibles en ' + y + '.</p>';
+
+  optsItems($('#icompraItem'), consumibles());
+  optsItems($('#iajusteItem'), consumibles());
+
+  // Mapeo consumo por producto
+  $('#listaConsumoProd').innerHTML = (DB.productos || []).map(p => {
+    const opts = consumibles().map(i => `<option value="${i.id}">${esc(i.nombre)}</option>`).join('');
+    const mapas = (p.consumo || []).map((c, idx) => `<div class="barra" style="margin:4px 0" data-p="${p.id}" data-i="${idx}">
+      <select data-citem style="flex:2">${consumibles().map(i => `<option value="${i.id}" ${i.id === c.itemId ? 'selected' : ''}>${esc(i.nombre)}</option>`).join('')}</select>
+      <input data-ccant type="number" step="0.01" value="${c.cant}" style="width:80px" title="Cantidad por unidad vendida">
+      <button data-cdel style="padding:8px">🗑️</button></div>`).join('');
+    return `<div class="card" data-pid="${p.id}"><b>${esc(p.emoji || '')} ${esc(p.nombre)}</b>${mapas || '<p class="muted">Sin descuento de inventario</p>'}
+      <button class="sec" data-cadd="${p.id}" style="margin-top:6px">+ Añadir artículo consumido</button></div>`;
+  }).join('') || '<p class="muted">No hay productos.</p>';
+  $$('#listaConsumoProd [data-cadd]').forEach(b => b.onclick = () => {
+    const p = DB.productos.find(x => x.id === b.dataset.cadd); if (!p) return;
+    if (!p.consumo) p.consumo = [];
+    const first = consumibles()[0]; if (!first) return toast('Crea un consumible antes');
+    p.consumo.push({itemId: first.id, cant: 1}); guardar({tipo: 'producto'}); pintarInventario();
+  });
+  $$('#listaConsumoProd [data-citem], #listaConsumoProd [data-ccant]').forEach(el => el.onchange = () => {
+    const row = el.closest('[data-p]'); const p = DB.productos.find(x => x.id === row.dataset.p); if (!p || !p.consumo) return;
+    const c = p.consumo[Number(row.dataset.i)]; if (!c) return;
+    if (el.dataset.citem !== undefined) c.itemId = el.value;
+    if (el.dataset.ccant !== undefined) c.cant = parseFloat(el.value.replace(',', '.')) || 0;
+    guardar({tipo: 'producto'}); toast('Consumo actualizado');
+  });
+  $$('#listaConsumoProd [data-cdel]').forEach(b => b.onclick = () => {
+    const row = b.closest('[data-p]'); const p = DB.productos.find(x => x.id === row.dataset.p); if (!p) return;
+    p.consumo.splice(Number(row.dataset.i), 1); guardar({tipo: 'producto'}); pintarInventario();
+  });
+}
+$('#invAnio').onchange = () => pintarInventario();
+
+$('#btnNuevoCons').onclick = () => {
+  if (!sesion || !['superadmin','contabilidad'].includes(sesion.rol)) return;
+  const nombre = $('#icNombre').value.trim(); if (!nombre) return toast('Pon un nombre');
+  DB.inventario.push({id: uid(), tipo: 'consumible', nombre, categoria: $('#icCat').value.trim() || 'General', unidad: $('#icUnidad').value.trim() || 'unidad',
+    stock: parseFloat(String($('#icStock').value).replace(',', '.')) || 0, minimo: parseFloat(String($('#icMin').value).replace(',', '.')) || 0,
+    costeUnitario: aCent($('#icCoste').value), notas: '', activo: true});
+  $('#icNombre').value = $('#icCat').value = $('#icUnidad').value = $('#icCoste').value = ''; $('#icStock').value = '0'; $('#icMin').value = '0';
+  guardar({tipo: 'inventario'}); pintarInventario(); toast('Consumible añadido');
+};
+$('#btnNuevoMat').onclick = () => {
+  if (!sesion || !['superadmin','contabilidad'].includes(sesion.rol)) return;
+  const nombre = $('#imNombre').value.trim(); if (!nombre) return toast('Pon un nombre');
+  DB.inventario.push({id: uid(), tipo: 'material', nombre, categoria: $('#imCat').value.trim() || 'General', unidad: 'unidad',
+    stock: parseFloat(String($('#imStock').value).replace(',', '.')) || 0, minimo: 0, costeUnitario: 0, notas: $('#imNotas').value.trim(), activo: true});
+  $('#imNombre').value = $('#imCat').value = $('#imNotas').value = ''; $('#imStock').value = '1';
+  guardar({tipo: 'inventario'}); pintarInventario(); toast('Material añadido');
+};
+$('#btnCompra').onclick = () => {
+  if (!sesion || !['superadmin','contabilidad'].includes(sesion.rol)) return;
+  const id = $('#icompraItem').value; const it = itemPorId(id); if (!it) return toast('Elige un artículo');
+  const cant = parseFloat(String($('#icompraCant').value).replace(',', '.')); if (!(cant > 0)) return toast('Cantidad inválida');
+  const fecha = $('#icompraFecha').value; const ts = fecha ? new Date(fecha + 'T12:00:00').getTime() : Date.now();
+  const coste = aCent($('#icompraCoste').value); const nota = $('#icompraNota').value.trim();
+  it.stock = Math.round((Number(it.stock) + cant) * 1000) / 1000;
+  if (coste && cant) it.costeUnitario = Math.round(coste / cant);
+  registrarMovimiento({tipo: 'compra', itemId: id, cantidad: cant, nota, coste, ts});
+  $('#icompraCant').value = $('#icompraNota').value = $('#icompraCoste').value = '';
+  guardar({tipo: 'inventario'}); pintarInventario(); toast('Compra registrada');
+};
+$('#btnAjuste').onclick = () => {
+  if (!sesion || !['superadmin','contabilidad'].includes(sesion.rol)) return;
+  const id = $('#iajusteItem').value; const it = itemPorId(id); if (!it) return toast('Elige un artículo');
+  const tipo = $('#iajusteTipo').value; const cant = parseFloat(String($('#iajusteCant').value).replace(',', '.'));
+  const nota = $('#iajusteNota').value.trim(); if (!nota) return toast('El motivo es obligatorio');
+  if (tipo === 'inicial') {
+    if (!(cant >= 0) || Number.isNaN(cant)) return toast('Cantidad inválida');
+    const delta = Math.round((cant - Number(it.stock)) * 1000) / 1000;
+    it.stock = cant;
+    registrarMovimiento({tipo: 'inicial', itemId: id, cantidad: delta, nota: 'Recuento inicial → ' + cant + '. ' + nota});
+  } else {
+    if (!cant || Number.isNaN(cant)) return toast('Cantidad inválida (usa negativo para restar)');
+    it.stock = Math.round((Number(it.stock) + cant) * 1000) / 1000;
+    registrarMovimiento({tipo: 'ajuste', itemId: id, cantidad: cant, nota});
+  }
+  $('#iajusteCant').value = $('#iajusteNota').value = '';
+  guardar({tipo: 'inventario'}); pintarInventario(); toast('Movimiento registrado');
+};
+if ($('#icompraFecha') && !$('#icompraFecha').value) {
+  const d = new Date(); $('#icompraFecha').value = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+
 
 /* =====================================================================
    NAVEGACIÓN Y PINTADO
@@ -1364,6 +1736,7 @@ function irA(v) {
 }
 $$('nav button').forEach(b => b.onclick = () => irA(b.dataset.v));
 function pintarTodo() {
+  pintarBanner();
   $('#hdrFiesta').textContent = DB.ajustes.fiesta; document.title = 'Caja · ' + DB.ajustes.fiesta;
   const t = DB.turnoActual;
   $('#hdrUsuario').textContent = sesion ? `👤 ${sesion.nombre} (${ROLES[sesion.rol]}) · ${t ? (t.usuarioId === sesion.id ? 'en caja desde ' + hora(t.inicio) : 'en caja: ' + t.persona + ' desde ' + hora(t.inicio)) : 'caja cerrada'}` : '';
@@ -1375,6 +1748,7 @@ function pintarTodo() {
   pintarCajaEstado(); pintarProductos(); pintarCarrito(); pintarUltimas(); pintarCierre(); pintarTurnos();
   if (perm.includes('gastos')) pintarGastos();
   if (perm.includes('informe')) pintarInforme();
+  if (perm.includes('inventario')) pintarInventario();
   if (perm.includes('ajustes')) pintarAjustes();
 }
 
